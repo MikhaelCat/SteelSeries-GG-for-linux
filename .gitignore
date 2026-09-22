@@ -15,6 +15,7 @@ target/
 Cargo.lock
 
 # Internal files
+.aicoding-chat-workspace
 .vscode/
 .idea/
 *.swp
