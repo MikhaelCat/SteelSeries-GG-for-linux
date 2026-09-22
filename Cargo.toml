@@ -96,10 +96,6 @@ image = "0.25"
 tempfile = "3.15"
 mockall = "0.13"
 
-[[bench]]
-name = "rgb_effects"
-harness = false           # For criterion benchmarks
-
 [[bin]]
 name = "ssgg"
 path = "src/main.rs"
