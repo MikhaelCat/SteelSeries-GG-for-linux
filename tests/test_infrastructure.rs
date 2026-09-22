@@ -136,9 +136,10 @@ pub mod test_data_generators {
     use super::*;
     use rand::{distributions::Alphanumeric, Rng};
     use uuid::Uuid;
+    use tempfile::TempDir;
 
     pub fn generate_random_device_id() -> String {
-        format!("ssgg-{}", Uuid::new_v4().to_simple())
+        format!("ssgg-{}", Uuid::new_v4().simple())
     }
 
     pub fn generate_rgb_color() -> (u8, u8, u8) {

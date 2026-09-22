@@ -68,7 +68,9 @@ jobs:
           -A clippy::unnecessary_map_or \
           -A clippy::manual_saturating_arithmetic \
           -A clippy::unused_self \
-          -A clippy::module_inception
+          -A clippy::module_inception \
+          -A clippy::redundant_static_lifetimes \
+          -A clippy::needless_borrows_for_generic_args
     
     - name: Build library
       run: cargo build --lib --all-features

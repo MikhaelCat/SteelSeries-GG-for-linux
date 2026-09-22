@@ -639,14 +639,14 @@ mod gamesense_protocol_integration {
     fn test_game_data_streaming() {
         // Test streaming game data to RGB lighting
         let game_data = vec![
-            ("Kills", 15),
-            ("Deaths", 8),
-            ("Win Rate", 65.5),
-            ("KD Ratio", 1.87),
+            ("Kills", 15u32),
+            ("Deaths", 8u32),
+            ("Win Rate", 65.5f64),
+            ("KD Ratio", 1.87f64),
         ];
 
         for (metric, value) in game_data {
-            let result = stream_game_metric(metric, value);
+            let result = stream_game_metric(metric, value as f64);
             assert!(result.is_ok(), "Should stream metric: {}", metric);
         }
     }
