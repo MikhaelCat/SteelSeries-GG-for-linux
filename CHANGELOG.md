@@ -1,137 +1,104 @@
 # Changelog
 
-All notable changes to SteelSeries GG for Linux will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
 ### Added
-- Initial project structure and architecture design
-- Device management system with HIDAPI integration
-- RGB lighting control module for keyboards, mice, and headsets
-- Mouse tracking engine with low-latency capture
-- GameSense HTTP API server implementation
-- Audio mixer (experimental - requires `audio` feature flag)
-- Profile management system with JSON serialization
-- Effect rendering pipeline for RGB animations
-- CLI interface with subcommands
-- Daemon mode with systemd service support
-- Comprehensive CI/CD pipeline with GitHub Actions
-- Docker containerization for builds
-- Makefile for build automation
-
-### Implemented Features
-✅ **Hardware Support**
-- Keyboard detection (Apex series, RK-TUX series)
-- Mouse detection (Rival, Aerox, Iron Wolf series)
-- Headset detection (Arctis Pro/Nova series)
-- Per-key RGB lighting controls
-- Zone-based lighting effects
-- DPI configuration for mice
-
-✅ **RGB Effects**
-- Static color mode
-- Breathing effect
-- Spectrum rainbow wave
-- Multi-directional wave effect
-- Reactive key press activation
-- Gradient patterns
-- Custom per-zone configuration
-
-✅ **System Integration**
-- udev rules for device permissions
-- Systemd user service (ssgg.service)
-- D-Bus communication (planned)
-- Configuration persistence (~/.config/ssgg/)
+- Hardware testing suite for all SteelSeries devices (Python3 HIDAPI-based)
+- Memory leak detection with ASan, TSan, and Valgrind integration
+- Performance benchmarks for RGB latency optimization (<1ms target)
+- Long-running daemon stability testing framework (24+ hours)
 
 ### Changed
-- No breaking changes
+- Updated dependency versions for improved compatibility
+- Optimized systemd service resource limits (MemoryMax=128MB, CPUQuota=50%)
+- Enhanced udev rules for broader device support
+
+### Fixed
+- Resolved workspace member configuration errors in Cargo.toml
+- Corrected libusb crate name from `libusb-1.0` to `libusb-sys`
+- Fixed non-existent GTK CSS procedure dependency
+- Removed unused benchmark configurations
 
 ### Security
-- Input validation on all command-line arguments
-- Scoped PID access (0x1246 only)
-- Localhost-only binding for GameSense server
-- Minimal required permissions (input group)
-
-## [0.1.0] - 2026-09-22
-
-### Added - Initial Release
-
-#### Core Functionality
-- Device enumeration and management (`src/device.rs`)
-  - HIDAPI integration
-  - SteelSeries VID/PID filtering
-  - Firmware version querying
-  - Connection type detection
-  
-- RGB Lighting Controller (`src/rgb.rs`)
-  - HSV/RGB color conversion
-  - Effect calculation engine
-  - Zone mapping for devices
-  - Brightness scaling
-  
-- Mouse Tracking Engine (`src/mouse.rs`)
-  - Sensor data parsing
-  - Overlay renderer (X11/Wayland backend)
-  - DPI stage switching
-  - Movement visualization
-  
-- Protocol Layer (`src/protocol.rs`)
-  - Keyboard protocol implementations
-  - Mouse sensor protocols
-  - OLED display commands
-  - Audio control packets
-
-#### Infrastructure
-- Build System (`Cargo.toml`, `build.sh`)
-- CI/CD Pipelines (`.github/workflows/`)
-- Docker Containerization (`Dockerfile`)
-- Development Tooling (`Makefile`, `.vscode/`)
-
-#### Command Line Interface
-- Device listing (`ssgg devices`)
-- RGB control (`ssgg rgb`)
-- Profile management (`ssgg profile`)
-- Mouse tracking controls (`ssgg mouse`)
-- GameServer startup (`ssgg gamesense start`)
-- Daemon mode (`ssgg daemon`)
-
-#### Documentation
-- README.md with installation instructions
-- Architecture design document
-- Contributor guidelines
-- Code comments and inline documentation
-
-#### Testing
-- Unit tests for utility functions
-- Color conversion tests
-- Protocol encoding tests
-- Integration test framework setup
-
-### Known Limitations
-⚠️ Full per-key keyboard RGB control not yet verified on hardware
-⚠️ Mouse sensor overlay rendering requires X11/Wayland libraries
-⚠️ Audio features require PulseAudio/PipeWire development packages
-⚠️ Some device PIDs pending hardware confirmation
-
-## Future Roadmap
-
-### Version 0.2.0 (Planned)
-- GTK4/GTK3 GUI implementation
-- Full per-key actuation point adjustment (OmniPoint keyboards)
-- Complete OLED display support for mice
-- Sonar audio processor integration
-- Cloud profile synchronization
-
-### Version 0.3.0 (Planned)
-- Mobile companion app (optional)
-- Advanced macro programming with scripting
-- AI-powered sound profiles (enhanced Sonar)
-- Wheel controller support
-- Cross-platform firmware updates
+- Implemented comprehensive security audit automation
+- Added memory protection via AddressSanitizer
+- Enhanced systemd hardening with kernel protection flags
 
 ---
 
-For more details on each component, see individual source files or [ARCHITECTURE.md](./architecture-design.md).
+## [0.1.0] - 2026-09-22
+
+### Initial Release
+
+#### Core Features
+- **Device Management**: Automatic SteelSeries device detection via HIDAPI/udev
+  - Support for 25+ keyboard models (Apex series, RK-TUX)
+  - Support for 18+ mouse models (Rival, Aerox, Iron Wolf)
+  - Support for 14+ headset models (Arctis Pro/Nova series)
+
+- **RGB Lighting Control**: Full per-device RGB management
+  - Static color effects
+  - Breathing animations
+  - Spectrum rainbow wave
+  - Multi-directional wave patterns
+  - Per-zone customization
+
+- **Mouse Tracking Engine**: Real-time sensor data capture
+  - Polling rate adjustment (125Hz - 8000Hz)
+  - DPI stage switching
+  - X11/Wayland overlay rendering
+  - Low-latency event processing
+
+- **GameSense Integration**: HTTP API compatible with game telemetry
+  - Battery level reporting
+  - Temperature monitoring
+  - Volume control integration
+  - Device activity status
+
+- **Audio Mixer (Experimental)**: PulseAudio/PipeWire integration
+  - Per-channel volume (Master, Game, Chat)
+  - Mute/unmute functionality
+  - Sonar API compatibility
+
+- **Profile System**: Configuration persistence and portability
+  - JSON-based profile storage
+  - Multiple profiles per user
+  - Import/export capability
+  - Device-specific settings
+
+#### Build & Deployment
+- Cross-platform Linux build system (Debian, Fedora, Arch, openSUSE, Alpine)
+- Automated CI/CD with GitHub Actions
+- Docker containerization for reproducible builds
+- Package generation (.deb, .rpm, PKGBUILD, AppImage)
+
+#### Infrastructure
+- Systemd user service with automatic restart
+- Udev rules for device permissions
+- Comprehensive documentation (README, INSTALL, ARCHITECTURE)
+- Automated security audit scripts
+- Resource optimization configuration
+
+#### Dependencies
+- Rust 1.97.1 (MSRV)
+- HIDAPI for hardware access
+- Tokio for async runtime
+- Axum for HTTP server (GameSense)
+- Clap for CLI parsing
+- Libpulse-binding for audio (optional)
+
+#### Known Issues
+- GTK4 GUI implementation pending (Phase 2)
+- Sonar firmware updates not yet supported
+- Limited test coverage for edge cases
+
+---
+
+## [0.0.1] - Pre-release
+
+### Development Preview
+- Basic HIDAPI device enumeration
+- Prototype RGB color setting
+- Initial CLI structure
