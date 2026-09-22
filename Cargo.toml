@@ -33,7 +33,7 @@ base64 = "0.22"              # Secure encoding
 # HID & Hardware
 hidapi = "2.6.6"
 rustudev = "0.8"
-libusb-1-sys = "0.4"
+libusb-sys = "0.2"
 
 # Async runtime
 tokio = { version = "1.42", features = ["full"] }
