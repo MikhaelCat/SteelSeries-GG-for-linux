@@ -1,0 +1,194 @@
+name: Build & Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: full
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libhidapi-dev \
+          pkg-config \
+          build-essential \
+          libssl-dev \
+          libpulse-dev
+        
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
+        targets: x86_64-unknown-linux-gnu
+    
+    - name: Install sccache
+      run: |
+        curl -LO https://github.com/mozilla/sccache/releases/download/v0.6.4/sccache-v0.6.4-x86_64-unknown-linux-musl.tar.gz
+        tar xzf sccache-v0.6.4-x86_64-unknown-linux-musl.tar.gz
+        sudo install sccache-v0.6.4-x86_64-unknown-linux-musl/sccache /usr/local/bin/
+        chmod +x /usr/local/bin/sccache
+    
+    - name: Configure Cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+    
+    - name: Check formatting
+      run: cargo fmt -- --check
+    
+    - name: Run clippy
+      run: cargo clippy --all-targets --all-features -- -D warnings
+    
+    - name: Build library
+      run: cargo build --lib --all-features
+    
+    - name: Run unit tests
+      run: cargo test --all-features
+    
+  build-debug:
+    needs: check
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        feature-set:
+          - ""
+          - "--features audio"
+          - "--features sonar"
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libhidapi-dev \
+          pkg-config \
+          build-essential \
+          libssl-dev \
+          libpulse-dev
+    
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: x86_64-unknown-linux-gnu
+    
+    - name: Build debug binary
+      run: |
+        if [ -n "${{ matrix.feature-set }}" ]; then
+          cargo build --no-default-features --release ${{ matrix.feature-set }}
+        else
+          cargo build --release
+        fi
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ssgg-debug-${{ matrix.feature-set }}
+        path: target/release/ssgg
+    
+  build-release:
+    needs: [check]
+    runs-on: ubuntu-latest
+    
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libhidapi-dev \
+          pkg-config \
+          build-essential \
+          libssl-dev \
+          libpulse-dev \
+          lld
+    
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
+        targets: x86_64-unknown-linux-gnu
+    
+    - name: Get version from Cargo.toml
+      id: get_version
+      run: echo "version=$(grep '^version' Cargo.toml | head -1 | cut -d'"' -f2)" >> $GITHUB_OUTPUT
+    
+    - name: Build release binary
+      run: cargo build --release --all-features
+    
+    - name: Strip binary for size reduction
+      run: strip target/release/ssgg
+    
+    - name: Verify binary
+      run: |
+        file target/release/ssgg
+        ldd target/release/ssgg | grep -E "(not found|linux-vdso)" || true
+        ./target/release/ssgg --help
+    
+    - name: Upload release artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ssgg-release-${{ steps.get_version.outputs.version }}
+        path: target/release/ssgg
+        retention-days: 30
+    
+  publish-artifacts:
+    needs: [build-release]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: ssgg-release-*
+        merge-multiple: true
+    
+    - name: Create archive
+      run: |
+        tar -czvf ssgg_${{ needs.build-release.outputs.version }}_linux_amd64.tar.gz \
+          target/release/ssgg \
+          assets/99-steelseries.rules \
+          assets/ssgg.service \
+          README.md \
+          CHANGELOG.md 2>/dev/null || true
+    
+    - name: Generate checksums
+      run: |
+        sha256sum ssgg_*.tar.gz > ssgg_*.tar.gz.sha256
+    
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: |
+          ssgg_*.tar.gz
+          ssgg_*.tar.gz.sha256
+          target/release/ssgg
+        generate_release_notes: true
+        draft: false
+        prerelease: false

@@ -1,0 +1,117 @@
+name: Security & Code Quality
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    - cron: '0 0 * * 0' # Weekly on Sundays
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libhidapi-dev pkg-config build-essential
+    
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+    
+    - name: Run cargo-audit
+      uses:EmbarkStudios/cargo-action@cargo-audit
+      with:
+        command: audit
+        args: --all-features
+    
+    - name: Run cargo-deny
+      uses: EmbarkStudios/cargo-action@cargo-deny
+      if: false
+      with:
+        command: deny
+        args: check all --all-features
+    
+  dependency-review:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Dependency Review
+      uses: actions/dependency-review-action@v3
+    
+  code-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libhidapi-dev \
+          pkg-config \
+          build-essential
+    
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@nightly
+      with:
+        components: rustfmt, clippy
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libhidapi-dev pkg-config build-essential
+    
+    - name: Check formatting
+      run: cargo fmt -- --check
+    
+    - name: Run clippy (Nightly)
+      run: cargo +nightly clippy --all-targets --all-features -- -D warnings
+    
+    - name: Build documentation
+      run: cargo doc --no-deps --all-features
+    
+  msrv-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install minimal Rust version
+      uses: dtolnay/rust-toolchain@1.97.1
+    
+    - name: Verify MSRV compatibility
+      run: cargo build --release
+    
+  fuzz-testing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libhidapi-dev pkg-config build-essential
+    
+    - name: Install cargo-fuzz
+      run: cargo install cargo-fuzz
+    
+    - name: Setup fuzzer
+      run: |
+        mkdir -p fuzz
+        cd fuzz
+        cargo init --bin
+        echo '[dependencies]' >> Cargo.toml
+        echo 'ssgg = { path = ".." }' >> Cargo.toml
+    
+    - name: Run basic fuzz test (if enabled)
+      run: echo "Fuzz testing requires manual enablement for safety" || true
