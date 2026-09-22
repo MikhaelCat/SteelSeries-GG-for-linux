@@ -68,8 +68,7 @@ jobs:
           -A clippy::unnecessary_map_or \
           -A clippy::manual_saturating_arithmetic \
           -A clippy::unused_self \
-          -A clippy::module_inception \
-          -W unused
+          -A clippy::module_inception
     
     - name: Build library
       run: cargo build --lib --all-features
