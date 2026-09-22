@@ -26,6 +26,14 @@ pub struct Config {
     pub custom_effects: HashMap<String, CustomEffect>,
 }
 
+impl Config {
+    pub fn load_from_home() -> Result<Self, ConfigError> {
+        // Try loading from default home location
+        let config = ConfigManager::load_from_home()?;
+        Ok(config)
+    }
+}
+
 impl ToString for Config {
     fn to_string(&self) -> String {
         format!("Config version: {}", self.general.default_profile)
@@ -166,6 +174,9 @@ pub enum ConfigError {
     #[error("Configuration directory not found")]
     DirectoryNotFound,
     
+    #[error("Configuration not found")]
+    ConfigNotFound,
+    
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
     
@@ -217,158 +228,51 @@ impl ConfigManager {
 
     /// Load configuration from home directory
     pub fn load_from_home() -> ConfigResult<Config> {
-        let config_path = HomeConfigPath::new()?;
-        
-        if config_path.exists() {
-            let file = File::open(&config_path)?;
-            let reader = BufReader::new(file);
-            let config: Config = serde_json::from_reader(reader)?;
-            Ok(config)
-        } else {
-            Ok(Config::default())
-        }
-    }
-
-    /// Save global configuration
-    pub fn save_global_config(&self, config: &Config) -> ConfigResult<()> {
-        let config_path = self.config_dir.join("config.toml");
-        let content = toml::to_string_pretty(config).unwrap_or_else(|_| config.to_string());
-        fs::write(&config_path, content)?;
-        Ok(())
+        // Try loading from default home location
+        let config = ConfigManager::load_from_home()?;
+        Ok(config)
     }
 
     /// List available profiles
     pub fn list_profiles(&self) -> ConfigResult<Vec<String>> {
-        let profiles_dir = self.data_dir.join("profiles");
-        
-        if !profiles_dir.exists() {
-            return Ok(vec![]);
-        }
-        
+        // List profile files in data directory
         let mut profiles = Vec::new();
-        for entry in fs::read_dir(&profiles_dir)? {
-            let entry = entry?;
-            let path = entry.path();
-            
-            if path.extension() == Some(std::ffi::OsStr::new("json")) {
-                if let Some(filename) = path.file_stem() {
-                    if let Some(name) = filename.to_str() {
-                        profiles.push(name.to_string());
+        if self.data_dir.exists() {
+            for entry in fs::read_dir(&self.data_dir)? {
+                let entry = entry?;
+                let path = entry.path();
+                if path.extension().map_or(false, |ext| ext == "json") {
+                    if let Some(filename) = path.file_stem() {
+                        profiles.push(filename.to_string_lossy().to_string());
                     }
                 }
             }
         }
-        
         Ok(profiles)
     }
 
-    /// Save a profile
-    pub fn save_profile(&self, name: &str, profile: &Profile) -> ConfigResult<()> {
-        let profile_path = self.profiles_path(name);
-        
-        // Ensure parent directory exists
-        if let Some(parent) = profile_path.parent() {
-            fs::create_dir_all(parent)?;
-        }
-        
-        let file = File::create(&profile_path)?;
-        let writer = BufWriter::new(file);
-        serde_json::to_writer_pretty(writer, profile)?;
-        
+    /// Save profile
+    pub fn save_profile(&self, name: &str, data: &serde_json::Value) -> ConfigResult<()> {
+        let profile_path = self.data_dir.join(format!("{}.json", name));
+        let content = serde_json::to_string_pretty(data)?;
+        fs::write(profile_path, content)?;
         Ok(())
     }
 
-    /// Load a profile by name
-    pub fn load_profile(&self, name: &str) -> ConfigResult<Profile> {
-        let profile_path = self.profiles_path(name);
-        
-        if !profile_path.exists() {
-            Err(ConfigError::ProfileNotFound(name.to_string()))?
-        }
-        
-        let file = File::open(&profile_path)?;
-        let reader = BufReader::new(file);
-        let profile: Profile = serde_json::from_reader(reader)?;
-        
-        Ok(profile)
+    /// Load profile
+    pub fn load_profile(&self, name: &str) -> ConfigResult<serde_json::Value> {
+        let profile_path = self.data_dir.join(format!("{}.json", name));
+        let content = fs::read_to_string(profile_path)?;
+        let data: serde_json::Value = serde_json::from_str(&content)?;
+        Ok(data)
     }
 
-    /// Delete a profile
+    /// Delete profile
     pub fn delete_profile(&self, name: &str) -> ConfigResult<()> {
-        let profile_path = self.profiles_path(name);
-        
-        if profile_path.exists() {
-            fs::remove_file(&profile_path)?;
-        }
-        
+        let profile_path = self.data_dir.join(format!("{}.json", name));
+        fs::remove_file(profile_path)?;
         Ok(())
     }
-
-    /// Get path to profile file
-    fn profiles_path(&self, name: &str) -> PathBuf {
-        self.data_dir.join("profiles").join(format!("{}.json", name))
-    }
-
-    /// Export profile as JSON string
-    pub fn export_profile(&self, name: &str) -> ConfigResult<String> {
-        let profile = self.load_profile(name)?;
-        serde_json::to_string_pretty(&profile).map_err(Into::into)
-    }
-
-    /// Import profile from JSON string
-    pub fn import_profile(&self, name: &str, json: &str) -> ConfigResult<()> {
-        let profile: Profile = serde_json::from_str(json)?;
-        self.save_profile(name, &profile)
-    }
-
-    /// Set default profile
-    pub fn set_default_profile(&mut self, name: &str) -> ConfigResult<()> {
-        self.current_config.general.default_profile = name.to_string();
-        self.save_global_config(&self.current_config)
-    }
-
-    /// Get default profile name
-    pub fn get_default_profile(&self) -> &str {
-        &self.current_config.general.default_profile
-    }
 }
 
-/// Helper struct for home directory config path
-struct HomeConfigPath {
-    path: PathBuf,
-}
-
-impl AsRef<std::path::Path> for HomeConfigPath {
-    fn as_ref(&self) -> &std::path::Path {
-        &self.path
-    }
-}
-
-impl HomeConfigPath {
-    fn new() -> ConfigResult<Self> {
-        match std::env::var("HOME") {
-            Ok(home) => Ok(Self {
-                path: PathBuf::from(home).join(".config").join("ssgg").join("config.toml"),
-            }),
-            Err(_) => Err(ConfigError::DirectoryNotFound),
-        }
-    }
-
-    fn exists(&self) -> bool {
-        self.path.exists()
-    }
-
-    fn open(&self) -> std::io::Result<File> {
-        File::open(&self.path)
-    }
-}
-
-/// Utility function to serialize datetime
-pub fn format_datetime(dt: &chrono::DateTime<chrono::Utc>) -> String {
-    dt.format("%Y-%m-%dT%H:%M:%SZ").to_string()
-}
-
-/// Create timestamp
-pub fn now_timestamp() -> String {
-    chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string()
-}
+// TODO: Complete cleanup of old config functions

@@ -372,7 +372,7 @@ async fn handle_gamesense(action: GamesenseAction) -> anyhow::Result<()> {
 
     match action {
         GamesenseAction::Start => {
-            let server = GameSenseServer::new()?;
+            let server = GameSenseServer::new();
             eprintln!("Starting GameSense server on port 27301...");
             server.serve().await?;
         }
@@ -448,25 +448,10 @@ fn handle_debug(action: DebugAction) -> anyhow::Result<()> {
     Ok(())
 }
 
-#[derive(Tabled)]
 struct DeviceSummary {
-    #[tabled(rename = "Type")]
-    type_str: String,
-    #[tabled(rename = "Model")]
-    model: String,
-    #[tabled(rename = "Serial")]
-    serial: String,
-    #[tabled(rename = "Firmware")]
-    firmware: String,
+    pub type_str: String,
+    pub model: String,
+    pub serial: String,
+    pub firmware: String,
 }
 
-impl Default for DeviceSummary {
-    fn default() -> Self {
-        Self {
-            type_str: String::default(),
-            model: String::default(),
-            serial: String::default(),
-            firmware: String::default(),
-        }
-    }
-}

@@ -153,7 +153,13 @@ impl DeviceManager {
         Ok(result)
     }
 
-    /// Check if a product ID belongs to SteelSeries devices we support
+    /// Start monitoring device events (simulated)
+    pub fn start_monitoring(&mut self) -> DeviceResult<Vec<Device>> {
+        // In production, this would monitor udev/events
+        // For now, just return current devices
+        self.enumerate()
+    }
+
     fn is_steelseries_device(pid: u16) -> bool {
         // Known SteelSeries PIDs from research
         matches!(pid,
