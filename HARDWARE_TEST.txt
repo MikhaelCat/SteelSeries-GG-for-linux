@@ -1,0 +1,6 @@
+Device Detection Results:
+=========================
+Bus 001 Device 004: ID 1038:1122 SteelSeries ApS SteelSeries KLC
+Bus 001 Device 005: ID 1038:1161 SteelSeries ApS SteelSeries ALC
+
+✅ Found: SteelSeries KLC (Keyboard) + ALC (Audio Controller)
