@@ -104,7 +104,9 @@ jobs:
           pkg-config \
           build-essential \
           libssl-dev \
-          libpulse-dev
+          libpulse-dev \
+          libgdk-pixbuf2.0-dev \
+          gir1.2-gdkpixbuf-2.0
     
     - name: Setup Rust
       uses: dtolnay/rust-toolchain@stable
@@ -144,7 +146,11 @@ jobs:
           build-essential \
           libssl-dev \
           libpulse-dev \
-          lld
+          lld \
+          libgdk-pixbuf2.0-dev \
+          gir1.2-gdkpixbuf-2.0 \
+          libudev-dev \
+          libusb-1.0-0-dev
     
     - name: Setup Rust
       uses: dtolnay/rust-toolchain@stable
