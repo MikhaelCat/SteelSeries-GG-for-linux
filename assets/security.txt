@@ -1,0 +1,7 @@
+Contact: mailto:security@steelseries-linux.dev
+Expires: 2027-12-31T23:59:59Z
+Encryption: https://keybase.io/steelseries-linux/pgp_keys.asc
+Preferred-Languages: en, ru
+Canonical: /security.txt
+Policy: https://github.com/MikhaelCat/SteelSeries-GG-for-linux/security/policy
+Hiring: https://github.com/MikhaelCat/SteelSeries-GG-for-linux/blob/main/CONTRIBUTING.md
