@@ -2,9 +2,9 @@ name: Build & Test
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ master ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ master ]
 
 env:
   CARGO_TERM_COLOR: always
@@ -157,7 +157,7 @@ jobs:
   publish-artifacts:
     needs: [build-release]
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     
     steps:
     - uses: actions/checkout@v4
