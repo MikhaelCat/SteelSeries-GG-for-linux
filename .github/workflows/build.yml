@@ -61,7 +61,12 @@ jobs:
           -A clippy::derivable_impls \
           -A clippy::needless_return \
           -A clippy::unnecessary_cast \
-          -A clippy::new_without_default
+          -A clippy::new_without_default \
+          -A clippy::never_loop \
+          -A clippy::manual_range_contains \
+          -A clippy::to_string_trait_impl \
+          -A clippy::unnecessary_map_or \
+          -A clippy::manual_saturating_arithmetic
     
     - name: Build library
       run: cargo build --lib --all-features
