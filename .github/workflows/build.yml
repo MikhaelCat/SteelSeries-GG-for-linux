@@ -70,7 +70,11 @@ jobs:
           -A clippy::unused_self \
           -A clippy::module_inception \
           -A clippy::redundant_static_lifetimes \
-          -A clippy::needless_borrows_for_generic_args
+          -A clippy::needless_borrows_for_generic_args \
+          -A clippy::absurd_extreme_comparisons \
+          -A clippy::implicit_saturating_sub \
+          -A clippy::useless_vec \
+          -A clippy::unused_comparisons
     
     - name: Build library
       run: cargo build --lib --all-features

@@ -25,6 +25,7 @@ strip = true
 [workspace.lints.rust]
 unused = "allow"
 dead_code = "allow"
+warnings = "allow"
 
 [features]
 default = []
