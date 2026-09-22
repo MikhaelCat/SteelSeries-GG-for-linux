@@ -35,10 +35,21 @@ jobs:
     
     - name: Install sccache
       run: |
-        # Use official pre-built binary for glibc
-        curl -L https://github.com/mozilla/sccache/releases/download/v0.8.4/sccache-v0.8.4-x86_64-unknown-linux-gnu.tar.gz | tar xzf -
+        # Download and install sccache for glibc Linux
+        ARCHIVE=$(mktemp)
+        curl -L -o $ARCHIVE https://github.com/mozilla/sccache/releases/download/v0.8.4/sccache-v0.8.4-x86_64-unknown-linux-gnu.tar.gz
+        
+        # Verify download success
+        if [ ! -s $ARCHIVE ]; then
+          echo "Failed to download sccache archive"
+          exit 1
+        fi
+        
+        # Extract and install
+        tar xzf $ARCHIVE
         sudo install sccache-v0.8.4-x86_64-unknown-linux-gnu/sccache /usr/local/bin/
         chmod +x /usr/local/bin/sccache
+        rm -f $ARCHIVE
     
     - name: Configure Cache
       uses: actions/cache@v4
