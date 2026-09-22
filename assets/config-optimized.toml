@@ -1,0 +1,84 @@
+# SteelSeries GG - Optimized Resource Configuration
+# This configuration ensures minimal resource usage while maintaining functionality
+
+[resource]
+# Memory optimization settings
+max_memory_mb = 128           # Maximum memory usage (MB)
+heap_size_mb = 64             # Rust heap size (MB)
+stack_size_mb = 8             # Thread stack size (MB)
+
+# CPU optimization settings
+cpu_quota_percent = 50        # CPU time limit percentage
+nice_level = 10               # Process priority (-20 to 19, higher = lower priority)
+io_priority = "idle"          # I/O scheduling priority (idle, best-effort, realtime)
+
+# Threading optimization
+min_threads = 1               # Minimum background threads
+max_threads = 4               # Maximum worker threads
+thread_timeout_ms = 5000      # Thread timeout in milliseconds
+
+# Performance settings
+enable_lazy_loading = true    # Load modules only when needed
+enable_connection_pooling = true
+pool_size = 5                 # Connection pool size
+
+# Garbage collection tuning
+gc_min_interval_ms = 1000     # Minimum GC interval
+gc_max_interval_ms = 10000    # Maximum GC interval
+
+[memory_optimization]
+# Enable zero-copy operations where possible
+zero_copy_enabled = true
+
+# Buffer sizes for optimal performance
+read_buffer_kb = 4            # HID read buffer (KB)
+write_buffer_kb = 4           # HID write buffer (KB)
+
+# Use mlock for critical sections to prevent swapping
+mlock_critical_sections = true
+
+# Enable page caching for frequently accessed data
+page_cache_enabled = true
+page_cache_max_mb = 32
+
+[background_optimization]
+# Daemon operation optimizations
+sleep_when_inactive_ms = 100  # Sleep interval when no activity
+adaptive_sleep = true         # Adjust sleep based on device polling rate
+
+# Reduce polling frequency for non-critical operations
+sensor_poll_rate_hz = 60      # Default sensor polling (Hz)
+rgb_update_rate_hz = 30       # RGB lighting update rate (Hz)
+
+[logging]
+# Minimal logging for production
+log_level = "warn"            # Level: trace, debug, info, warn, error
+log_to_file = false           # Disable file logging to reduce I/O
+log_rotation = "never"        # Never rotate logs in daemon mode
+
+[event_handling]
+# Event processing optimization
+batch_events = true           # Batch multiple events before processing
+event_coalesce_ms = 5         # Coalesce events within 5ms window
+priority_events_only = true   # Process high-priority events first
+
+[connection]
+# Optimize USB/HID connections
+usb_keepalive_interval_ms = 5000      # USB keepalive interval
+hid_query_interval_ms = 1000          # Device query interval
+connection_retry_delay_ms = 1000      # Retry delay on connection loss
+max_retries = 3                       # Maximum retry attempts
+
+[network]
+# GameSense network optimization
+bind_address = "127.0.0.1"      # Localhost only for security
+port = 27301
+keepalive_timeout_s = 30        # Keepalive timeout (seconds)
+max_connections = 10            # Maximum concurrent connections
+
+[gui_autostart]
+# Automatic GUI launch after systemd service starts
+enabled = true
+launch_delay_ms = 2000          # Delay after daemon startup (ms)
+display_variable = ""           # Auto-detect DISPLAY variable
+desktop_notification = true     # Show notification on successful start
