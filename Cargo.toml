@@ -25,6 +25,11 @@ experimental-apex-2023 = []        # Experimental Apex Pro TKL 2023 support
 wayland-overlay = []              # Wayland screen capture for mouse tracker
 
 [dependencies]
+# Security & Encryption
+zeroize = "1.8"              # Secure memory clearing
+subtle = "2.6"               # Constant-time crypto operations
+base64 = "0.22"              # Secure encoding
+
 # HID & Hardware
 hidapi = "2.6.6"
 rustudev = "0.8"
@@ -53,6 +58,7 @@ serde_cbor = "0.11"
 # Error handling
 thiserror = "2.0"
 anyhow = "1.0"
+semver = "1.0"              # Version checking
 
 # Logging & Tracing
 tracing = "0.1"
@@ -89,6 +95,11 @@ image = "0.25"
 [dev-dependencies]
 tempfile = "3.15"
 mockall = "0.13"
+cargo-deny = { version = "0.15", optional = true }  # Dependency check
+
+[[bench]]
+name = "rgb_effects"
+harness = false           # For criterion benchmarks
 
 [[bin]]
 name = "ssgg"
