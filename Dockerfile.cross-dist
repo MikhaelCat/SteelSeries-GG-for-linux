@@ -1,0 +1,253 @@
+# SteelSeries GG for Linux - Cross-Distribution Build Images
+# Multi-stage Dockerfiles for building on different distributions
+
+FROM rust:1.97.1-slim-bullseye AS base-debian
+LABEL maintainer="SteelSeries Linux Team"
+
+# Install system dependencies for Debian-based systems
+RUN apt-get update && apt-get install -y \
+    libhidapi-dev \
+    pkg-config \
+    build-essential \
+    libssl-dev \
+    libpulse-dev \
+    lld \
+    ca-certificates \
+    curl \
+    debhelper \
+    devscripts \
+    fakeroot \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+
+# Copy manifest files first for caching
+COPY Cargo.toml Cargo.lock ./
+
+FROM base-debian AS deps-cache
+RUN cargo fetch
+
+FROM deps-cache AS builder
+COPY . .
+
+ENV RUSTFLAGS="-C link-arg=-fuse-ld=lld"
+ENV CARGO_INCREMENTAL=0
+
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/workspace/target \
+    cargo build --release --all-features && \
+    strip target/release/ssgg
+
+FROM builder AS package-builder
+# Prepare DEB package structure
+RUN mkdir -p package/usr/bin package/etc/udev/rules.d package/lib/systemd/user
+
+COPY assets/99-steelseries.rules package/etc/udev/rules.d/
+COPY assets/ssgg.service package/lib/systemd/user/
+
+RUN cp target/release/ssgg package/usr/bin/
+
+# Create DEB package metadata
+RUN mkdir -p package/DEBIAN && \
+    echo "Package: ssgg" > package/DEBIAN/control && \
+    echo "Version: $(grep '^version' Cargo.toml | head -1 | cut -d'"' -f2)" >> package/DEBIAN/control && \
+    echo "Architecture: amd64" >> package/DEBIAN/control && \
+    echo "Maintainer: SteelSeries Linux Team" >> package/DEBIAN/control && \
+    echo "Description: Open-source SteelSeries GG replacement for Linux" >> package/DEBIAN/control
+
+RUN dpkg-deb --build package /tmp/ssgg.deb
+
+CMD ["bash", "-c", "cp /tmp/ssgg.deb /output/ && ls -la /output/"]
+
+# Runtime image
+FROM debian:bullseye-slim AS runtime-debian
+LABEL version="0.1.0"
+LABEL org.opencontainers.image.source="https://github.com/Ven0m0/steelseriesgg-rs"
+
+RUN apt-get update && apt-get install -y \
+    libhidapi0 \
+    libssl3 \
+    libpulse0 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=package-builder /tmp/ssgg.deb /tmp/ssgg.deb
+
+RUN dpkg -i /tmp/ssgg.deb && \
+    useradd --system --no-create-home ssgg && \
+    chown ssgg:ssgg /home/ssgg/.config/ssgg 2>/dev/null || true
+
+USER ssgg
+
+EXPOSE 27301
+
+CMD ["/usr/bin/ssgg", "daemon"]
+
+
+# =====================================================
+# Red Hat/Fedora Based System (RPM Package)
+# =====================================================
+FROM fedora:39 AS base-fedora
+LABEL maintainer="SteelSeries Linux Team"
+
+RUN dnf install -y \
+    gcc-c++ \
+    pkgconf-pkg-config \
+    openssl-devel \
+    hidapi-devel \
+    pulseaudio-libs-devel \
+    rpm-build \
+    createrepo \
+    && dnf clean all
+
+WORKDIR /workspace
+
+COPY Cargo.toml Cargo.lock ./
+
+FROM base-fedora AS deps-fedora
+RUN cargo fetch
+
+FROM deps-fedora AS builder-fedora
+COPY . .
+
+ENV RUSTFLAGS="-C link-arg=-fuse-ld=lld"
+
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/workspace/target \
+    cargo build --release --all-features && \
+    strip target/release/ssgg
+
+# RPM packaging
+FROM builder-fedora AS rpmbuild
+RUN mkdir -p rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
+
+# Create spec file
+RUN cat > rpmbuild/SPECS/ssgg.spec << 'EOF'
+Name:           ssgg
+Version:        0.1.5
+Release:        1%{?dist}
+Summary:        SteelSeries GG replacement for Linux
+
+License:        MIT
+URL:            https://github.com/Ven0m0/steelseriesgg-rs
+Source0:        %{name}-%{version}.tar.gz
+
+BuildArch:      x86_64
+
+%description
+Open-source replacement for SteelSeries GG software on Linux.
+Provides RGB lighting control, audio mixing, and GameSense support.
+
+%prep
+%setup -q
+
+%build
+cargo build --release --all-features %{\?_smp_mflags}
+
+%install
+install -Dm755 target/release/ssgg %{buildroot}/usr/bin/ssgg
+install -Dm644 assets/99-steelseries.rules %{buildroot}/etc/udev/rules.d/99-steelseries.rules
+install -Dm644 assets/ssgg.service %{buildroot}/lib/systemd/user/
+
+%files
+/usr/bin/ssgg
+/etc/udev/rules.d/99-steelseries.rules
+/lib/systemd/user/ssgg.service
+
+%changelog
+* SteelSeries Linux Team - 0.1.5
+- Initial release
+EOF
+
+# Build SRPM and RPM
+RUN cd rpmbuild && \
+    rpmbuild -ba SPECS/ssgg.spec
+
+CMD ["bash", "-c", "ls -la rpmbuild/RPMS/*/ && cp rpmbuild/RPMS/*/*.rpm /output/"]
+
+
+# =====================================================
+# Arch Linux (PKGBUILD Support)
+# =====================================================
+FROM archlinux/base:latest AS base-arch
+LABEL maintainer="SteelSeries Linux Team"
+
+RUN pacman -Sy --noconfirm \
+    base-devel \
+    rust \
+    cargo \
+    pkgconf \
+    hidapi \
+    openssl \
+    pulseaudio-standalone \
+    && pacman -Sc --noconfirm
+
+WORKDIR /workspace
+
+FROM base-arch AS builder-arch
+COPY . .
+
+RUN --mount=type=cache,target=/var/cache/pacman/pkg \
+    --mount=type=cache,target=/root/.cargo/registry \
+    cargo build --release --all-features && \
+    strip target/release/ssgg
+
+FROM builder-arch AS arch-package
+# PKGBUILD will be generated by CI/CD pipeline
+# This is mainly for reference in build scripts
+
+CMD ["bash", "-c", "mkdir -p /output && cp target/release/ssgg /output/"]
+
+
+# =====================================================
+# Alpine Linux (APK Package)
+# =====================================================
+FROM alpine:3.19 AS base-alpine
+LABEL maintainer="SteelSeries Linux Team"
+
+RUN apk add --no-cache \
+    build-base \
+    rust \
+    cargo \
+    musl-dev \
+    openssl-dev \
+    libusb-dev \
+    hidapi-dev \
+    libpulse-dev
+
+WORKDIR /workspace
+
+FROM base-alpine AS builder-alpine
+COPY . .
+
+RUN cargo build --release --all-features && \
+    strip target/release/ssgg
+
+CMD ["bash", "-c", "echo 'Alpine packages use APK format. See packaging docs.'"]
+
+
+# =====================================================
+# Generic Universal Builder (Static Binary)
+# =====================================================
+FROM rust:1.97.1-alpine AS universal-static
+LABEL description="Universal static binary builder"
+
+RUN apk add --no-cache \
+    musl-dev \
+    clang \
+    lld \
+    pkgconf
+
+WORKDIR /workspace
+
+COPY . .
+
+# Cross-compile to static binary
+RUN echo '[target.x86_64-unknown-linux-musl]' > rust-toolchain.toml && \
+    echo 'linker = "clang"' >> rust-toolchain.toml && \
+    echo 'rustflags = ["-C", "link-arg=-fuse-ld=lld", "-C", "link-self-contained=yes"]' >> rust-toolchain.toml && \
+    
+    # Build static binary
+    cargo build --release --target x86_64-unknown-linux-musl && \
+    strip target/x86_64-unknown-linux-musl/release/ssgg
+
+CMD ["bash", "-c", "ls -la target/x86_64-unknown-linux-musl/release/ssgg && echo 'Static binary ready for any distro'"]

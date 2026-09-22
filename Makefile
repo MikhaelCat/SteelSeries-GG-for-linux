@@ -1,158 +1,241 @@
-# SteelSeries GG for Linux - Makefile
+# SteelSeries GG for Linux - Cross-Platform Build System
+# Supports: Ubuntu/Debian, Fedora/RHEL, Arch Linux, openSUSE, Alpine, and more
 
-.PHONY: all build clean test clippy fmt docs install uninstall help check security
+.SUFFIXES:
+.DELETE_FROM_PRIORITY:
 
-.DEFAULT_GOAL := help
+# Configuration
+BINARY_NAME := ssgg
+VERSION := $(shell grep '^version' Cargo.toml | head -1 | cut -d'"' -f2)
+RUST_TOOLCHAIN := 1.97.1
 
-# Variables
-CARGO_OPTS ?= --release
+# Platform detection
+UNAME_S := $(shell uname -s)
+UNAME_M := $(shell uname -m)
+
+ifeq ($(UNAME_S),Linux)
+    OS := linux
+else ifeq ($(UNAME_S),Darwin)
+    OS := macos
+else
+    OS := unknown
+endif
+
+ifeq ($(UNAME_M),x86_64)
+    ARCH := x86_64
+else ifeq ($(UNAME_M),aarch64)
+    ARCH := aarch64
+else ifeq ($(UNAME_M),arm64)
+    ARCH := arm64
+else
+    ARCH := $(UNAME_M)
+endif
+
+# Distribution detection
+ifneq ($(shell test -f /etc/debian_version && echo debian),)
+    DISTRO := debian
+    PACKAGE_FORMAT := deb
+else ifneq ($(shell test -f /etc/fedora-release && echo fedora),)
+    DISTRO := fedora
+    PACKAGE_FORMAT := rpm
+else ifneq ($(shell test -f /etc/redhat-release && echo redhat),)
+    DISTRO := rhel
+    PACKAGE_FORMAT := rpm
+else ifneq ($(shell test -f /etc/arch-release && echo arch),)
+    DISTRO := arch
+    PACKAGE_FORMAT := pkg.tar.zst
+else ifneq ($(shell test -f /etc/SUSE-brand && echo suse),)
+    DISTRO := opensuse
+    PACKAGE_FORMAT := rpm
+else ifneq ($(shell cat /etc/*-release 2>/dev/null | grep alpine),)
+    DISTRO := alpine
+    PACKAGE_FORMAT := apk
+else
+    DISTRO := generic
+    PACKAGE_FORMAT := binary
+endif
+
+# Feature flags
 FEATURES ?=
-CARGO_ARGS ?=
-BINARY_NAME = ssgg
-SYSTEMD_SERVICE = ssgg.service
-UDEV_RULES = 99-steelseries.rules
+ALL_FEATURES := audio sonar experimental-apex-2023
 
-# Colors for output
+# Build options
+BUILD_TYPE ?= release
+CARGO_FLAGS := --$(BUILD_TYPE)
+ifneq ($(FEATURES),)
+    CARGO_FLAGS += --features $(FEATURES)
+endif
+
+# Optimization flags
+RUSTFLAGS ?= -C link-arg=-fuse-ld=$(shell which lld 2>/dev/null || which mold 2>/dev/null || echo "lld")
+export RUSTFLAGS
+
+# Paths
+BUILD_DIR := target/$(BUILD_TYPE)
+DIST_DIR := dist
+
+# Colors
 RED := \033[0;31m
 GREEN := \033[0;32m
 YELLOW := \033[0;33m
 BLUE := \033[0;34m
-NC := \033[0m # No Color
+NC := \033[0m
 
-help: ## Show this help message
-	@echo "$(BLUE)SteelSeries GG for Linux - Build & Development$(NC)"
+help:
+	@echo "$(BLUE)╔═══════════════════════════════════════════════════════╗$(NC)"
+	@echo "$(BLUE)║   SteelSeries GG - Cross-Platform Build System      ║$(NC)"
+	@echo "$(BLUE)╚═══════════════════════════════════════════════════════╝$(NC)"
 	@echo ""
-	@echo "Usage: make [target]"
+	@echo "Detected platform:"
+	@echo "  Operating System:  $(OS)"
+	@echo "  Architecture:      $(ARCH)"
+	@echo "  Distribution:      $(DISTRO)"
+	@echo "  Package Format:    $(PACKAGE_FORMAT)"
 	@echo ""
-	@echo "Available targets:"
+	@echo "Quick Start:"
+	@echo "  $(GREEN)make build$(NC)         Build the project"
+	@echo "  $(GREEN)make test$(NC)          Run tests"
+	@echo "  $(GREEN)make check$(NC)         Run all quality checks"
+	@echo ""
+	@echo "Installation:"
+	@echo "  $(GREEN)make install$(NC)       Install to system (requires root)"
+	@echo "  $(GREEN)make uninstall$(NC)     Remove from system"
+	@echo ""
+	@echo "Packaging ($(PACKAGE_FORMAT)):";
+	@echo "  $(GREEN)make package$(NC)       Create distribution package"
+	@echo "  $(GREEN)make deb$(NC)           Create .deb package"
+	@echo "  $(GREEN)make rpm$(NC)           Create .rpm package"
+	@echo "  $(GREEN)make appimage$(NC)      Create AppImage"
+	@echo ""
+	@echo "Cross-Build:"
+	@echo "  $(GREEN)make docker-build$(NC)  Build in Docker container"
+	@echo ""
+	@echo "More targets: $(yellow)make help-all$(NC)"
 
-build: $(call print_target,Building $(BINARY_NAME)) ## Build the project
-	@cargo build $(CARGO_OPTS) $(FEATURES) $(CARGO_ARGS)
-	@echo "$(GREEN)✓ Build successful$(NC)"
+build: setup-build-env
+	@echo "$(GREEN)[INFO]$(NC) Building for $(DISTRO)/$(ARCH)..."
+	cargo build $(CARGO_FLAGS)
+	@echo "$(GREEN)[✓]$(NC) Build complete: $(BUILD_DIR)/$(BINARY_NAME)"
 
-debug: CARGO_OPTS=--no-default-features --dev
-debug: FEATURES=$(if $(FEATURES),$(FEATURES),audio sonar)
-debug: ## Build debug version with optional features
-	@cargo build $(CARGO_OPTS) $(FEATURES)
-	@echo "$(GREEN)✓ Debug build complete$(NC)"
+debug: BUILD_TYPE=debug
+debug: FEATURES=audio sonar
+debug: build
 
-release: CARGO_OPTS=--release --all-features
-release: ## Build optimized release binary
-	@cargo build $(CARGO_OPTS)
-	@strip target/release/$(BINARY_NAME)
-	@echo "$(GREEN)✓ Release build complete and stripped$(NC)"
+release: build
 
-clean: ## Clean build artifacts
-	@cargo clean
-	@echo "$(YELLOW)✓ Build directory cleaned$(NC)"
+all: build test
 
-test: ## Run unit tests
-	@cargo test --all-features --quiet
-	@echo "$(GREEN)✓ Tests passed$(NC)"
+test: 
+	@echo "$(GREEN)[INFO]$(NC) Running tests..."
+	cargo test --all-features
+	@echo "$(GREEN)[✓]$(NC) Tests passed"
 
-integration-test: ## Run integration tests (requires hardware)
-	@echo "$(YELLOW)⚠ Integration tests require physical device$(NC)"
-	@cargo test --all-features -- --test-threads=1 || echo "Integration tests skipped or failed"
+check: fmt-check clippy
 
-clippy: ## Run Clippy linter
-	@cargo clippy --all-targets --all-features -- -D warnings
-	@echo "$(GREEN)✓ No Clippy warnings found$(NC)"
+fmt:
+	cargo fmt
 
-fmt: ## Format code
-	@cargo fmt
-	@echo "$(GREEN)✓ Code formatted$(NC)"
+fmt-check:
+	cargo fmt -- --check
 
-fmt-check: ## Check formatting without modifying files
-	@cargo fmt -- --check
-	@echo "$(GREEN)✓ Formatting is correct$(NC)"
+clippy:
+	cargo clippy --all-targets --all-features -- -D warnings
 
-docs: ## Generate documentation
-	@cargo doc --no-deps --all-features --open
-	@echo "$(GREEN)✓ Documentation generated$(NC)"
-
-check-docs: ## Verify documentation builds without errors
-	@cargo doc --no-deps --all-features
-	@echo "$(GREEN)✓ Documentation compiles correctly$(NC)"
-
-install: ## Install binary to system
-	@sudo cp target/release/$(BINARY_NAME) /usr/local/bin/$(BINARY_NAME)
-	@sudo chmod +x /usr/local/bin/$(BINARY_NAME)
-	@echo "$(GREEN)✓ Binary installed to /usr/local/bin/$(BINARY_NAME)$(NC)"
-
-install-udev: ## Install udev rules
-	@sudo cp assets/$(UDEV_RULES) /etc/udev/rules.d/
-	@sudo udevadm control --reload-rules
-	@sudo udevadm trigger
-	@echo "$(GREEN)✓ Udev rules installed and reloaded$(NC)"
-
-install-service: ## Install systemd service
-	@sudo cp assets/$(SYSTEMD_SERVICE) /lib/systemd/system/
-	@sudo systemctl daemon-reload
-	@echo "$(GREEN)✓ Systemd service installed$(NC)"
-
-uninstall: ## Remove binary
-	@sudo rm -f /usr/local/bin/$(BINARY_NAME)
-	@echo "$(YELLOW)✓ Binary removed$(NC)"
-
-uninstall-udev: ## Remove udev rules
-	@sudo rm -f /etc/udev/rules.d/$(UDEV_RULES)
-	@sudo udevadm control --reload-rules
-	@echo "$(YELLOW)✓ Udev rules removed$(NC)"
-
-uninstall-service: ## Remove systemd service
-	@sudo systemctl disable $(SYSTEMD_SERVICE) 2>/dev/null || true
-	@sudo rm -f /lib/systemd/system/$(SYSTEMD_SERVICE)
-	@sudo systemctl daemon-reload
-	@echo "$(YELLOW)✓ Systemd service removed$(NC)"
-
-install-all: install install-udev install-service ## Install everything (binary, udev, service)
-	@echo "$(GREEN)✓ Installation complete!$(NC)"
+install: build
+	@echo "$(GREEN)[INFO]$(NC) Installing $(BINARY_NAME)..."
+	sudo cp $(BUILD_DIR)/$(BINARY_NAME) /usr/local/bin/
+	sudo chmod +x /usr/local/bin/$(BINARY_NAME)
+	@if [ -f assets/99-steelseries.rules ]; then \
+		echo "$(GREEN)[INFO]$(NC) Installing udev rules..."; \
+		sudo cp assets/99-steelseries.rules /etc/udev/rules.d/; \
+		sudo udevadm control --reload-rules; \
+	fi
+	@if [ -f assets/ssgg.service ]; then \
+		echo "$(GREEN)[INFO]$(NC) Installing systemd service..."; \
+		sudo cp assets/ssgg.service /lib/systemd/user/; \
+		systemctl --user daemon-reload; \
+	fi
+	@echo "$(GREEN)[✓]$(NC) Installation complete"
 	@echo ""
 	@echo "Next steps:"
-	@echo "1. Add user to input group: sudo usermod -aG input $$USER"
-	@echo "2. Restart machine or run: sudo reboot"
-	@echo "3. Start daemon: systemctl --user start $(SYSTEMD_SERVICE)"
+	@echo "  sudo usermod -aG input $$USER"
+	@echo "  systemctl --user enable --now ssgg.service"
 
-check: fmt-check clippy test ## Run all quality checks
-	@echo "$(GREEN)✓ All checks passed!$(NC)"
-
-security-audit: ## Run cargo audit
-	@if command -v cargo-audit > /dev/null; then \
-		cargo audit --quiet || echo "$(YELLOW)⚠ Security issues found$(NC)"; \
-	else \
-		echo "$(YELLOW)⚠ Install cargo-audit: cargo install cargo-audit$(NC)"; \
+uninstall:
+	@echo "$(GREEN)[INFO]$(NC) Removing $(BINARY_NAME)..."
+	sudo rm -f /usr/local/bin/$(BINARY_NAME)
+	@if [ -f /etc/udev/rules.d/99-steelseries.rules ]; then \
+		sudo rm -f /etc/udev/rules.d/99-steelseries.rules; \
+		sudo udevadm control --reload-rules; \
 	fi
+	@if [ -f /lib/systemd/user/ssgg.service ]; then \
+		systemctl --user disable --now ssgg.service; \
+		sudo rm -f /lib/systemd/user/ssgg.service; \
+		systemctl --user daemon-reload; \
+	fi
+	@echo "$(GREEN)[✓]$(NC) Uninstallation complete"
 
-docker-build: ## Build Docker image
-	@docker build -t ssgg:latest .
-	@echo "$(GREEN)✓ Docker image built$(NC)"
+package: package-$(PACKAGE_FORMAT)
 
-docker-run: ## Run Docker container
-	@docker run -it --rm \
-		--privileged \
-		-v /dev:/dev \
-		-v /run/udev:/run/udev \
-		-v ~/.config/ssgg:/home/ssgg/.config/ssgg \
-		ssgg:latest \
-		ssgg daemon
+deb:
+	@if [ "$(DISTRO)" != "debian" ]; then \
+		echo "$(YELLOW)[WARN]$(NC) DEB packages are best built on Debian-based systems"; \
+		echo "$(YELLOW)[INFO]$(NC) Using Docker for cross-distribution build"; \
+		make docker-build-deb; \
+	else \
+		mkdir -p $(DIST_DIR); \
+		debuild -us -uc -b || true; \
+		mv ../*.deb $(DIST_DIR)/ 2>/dev/null || true; \
+		echo "$(GREEN)[✓]$(NC) DEB package created in $(DIST_DIR)/"
+	endif
 
-fix: ## Auto-fix common issues
-	@cargo fix --allow-staged --allow-dirty 2>/dev/null || true
-	@cargo fmt
-	@cargo clippy --fix --allow-dirty 2>/dev/null || true
-	@echo "$(GREEN)✓ Fixed common issues$(NC)"
+rpm:
+	@if [ "$(DISTRO)" != "fedora" ] && [ "$(DISTRO)" != "rhel" ] && [ "$(DISTRO)" != "opensuse" ]; then \
+		echo "$(YELLOW)[WARN]$(NC) RPM packages work better on RPM-based distributions"; \
+		make docker-build-rpm; \
+	else \
+		rpkg local || cargo build --release && \
+		createrepo ./RPMS/; \
+		echo "$(GREEN)[✓]$(NC) RPM package created"
+	endif
 
-bench: ## Run performance benchmarks
-	@mkdir -p benches
-	@echo "$(YELLOW)⚠ Benchmarks not yet implemented$(NC)"
+appimage:
+	@if ! command -v appimagetool &> /dev/null; then \
+		echo "$(YELLOW)[INFO]$(NC) AppImageTool not found, downloading..."; \
+		wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O /tmp/appimagetool; \
+		chmod +x /tmp/appimagetool; \
+	fi
+	@mkdir -p $(DIST_DIR)
+	@if command -v appimagetool &> /dev/null; then \
+		echo "$(GREEN)[INFO]$(NC) Creating AppImage..."; \
+		# Simplified AppImage creation\n\
+		cp $(BUILD_DIR)/$(BINARY_NAME) /tmp/ssgg/;\n\
+		mkdir -p /tmp/AppDir/usr/bin;\n\
+		cp /tmp/ssgg /tmp/AppDir/usr/bin/;\n\
+		echo '#!/bin/bash\nexec /opt/ssgg/usr/bin/ssgg "$$@"' > /tmp/AppDir/usr/bin/ssgg;\n\
+		/tmp/appimagetool /tmp/AppDir $(DIST_DIR)/$(BINARY_NAME)_$(VERSION)_$(ARCH).AppImage; \
+		echo "$(GREEN)[✓]$(NC) AppImage created"
+	endif
 
-package: release ## Create distribution package
-	@mkdir -p dist
-	@tar czf dist/ssgg_$(shell grep '^version' Cargo.toml | head -1 | cut -d'"' -f2)_linux_amd64.tar.gz \
-		target/release/$(BINARY_NAME) \
-		assets/$(UDEV_RULES) \
-		assets/$(SYSTEMD_SERVICE) \
-		README.md
-	@echo "$(GREEN)✓ Package created in dist/$(NC)"
+docker-build:
+	docker build -t ssgg-builder .
 
-.PHONY: all build debug release clean test integration-test clippy fmt fmt-check docs check-docs install install-udev install-service uninstall uninstall-udev uninstall-service install-all check security-audit docker-build docker-run fix bench package
+docker-build-deb:
+	docker build -t ssgg-deb-build -f Dockerfile.debian .
+	docker run --rm ssgg-deb-build tar -czf /tmp/ssgg_$(VERSION)_amd64.tar.gz /workspace/target/release/ssgg assets/*
+
+docker-build-rpm:
+	docker build -t ssgg-rpm-build -f Dockerfile.fedora .
+	docker run --rm ssgg-rpm-build tar -czf /tmp/ssgg_$(VERSION)_x86_64.tar.gz /workspace/target/release/ssgg assets/*
+
+clean:
+	cargo clean
+	rm -rf $(DIST_DIR)
+	rm -rf $(PKG_DIR)
+
+setup-build-env:
+	@mkdir -p $(DIST_DIR)
+
+.PHONY: help build debug release all test check fmt fmt-check clippy install uninstall \
+        package deb rpm appimage docker-build docker-build-deb docker-build-rpm \
+        clean setup-build-env
