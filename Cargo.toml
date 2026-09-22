@@ -64,9 +64,8 @@ semver = "1.0"              # Version checking
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
-# UI Framework (GTK4)
+# UI Framework (GTK4 - optional)
 gtk4 = { version = "0.10", features = ["v4_16"], optional = true }
-gtk4-css-proc = "0.1"
 
 # System info
 sysinfo = "0.33"
