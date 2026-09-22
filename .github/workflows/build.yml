@@ -153,7 +153,8 @@ jobs:
           gir1.2-gdkpixbuf-2.0 \
           libudev-dev \
           libusb-1.0-0-dev \
-          libpango1.0-dev
+          libpango1.0-dev \
+          libgtk-4-dev
     
     - name: Setup Rust
       uses: dtolnay/rust-toolchain@stable
