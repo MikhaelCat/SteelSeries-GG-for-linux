@@ -72,9 +72,7 @@ jobs:
       run: cargo build --lib --all-features
     
     - name: Run unit tests
-      run: |
-        # Exclude performance_suite (uses unstable test::Bencher API)
-        cargo test --all-features --exclude benchmarks
+      run: cargo test --all-features
     
   build-debug:
     needs: check
