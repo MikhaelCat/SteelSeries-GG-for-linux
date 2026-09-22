@@ -103,7 +103,11 @@ jobs:
         sudo apt-get install -y libhidapi-dev pkg-config build-essential
     
     - name: Install cargo-fuzz
-      run: cargo install cargo-fuzz
+      run: |
+        # Use pre-built binary for faster CI setup
+        curl -L https://github.com/rust-fuzz/cargo-fuzz/releases/download/v0.11.0/cargo-fuzz-v0.11.0-x86_64-unknown-linux-musl.tar.gz | tar xzf -
+        sudo cp cargo-fuzz /usr/local/bin/
+        chmod +x /usr/local/bin/cargo-fuzz
     
     - name: Setup fuzzer
       run: |

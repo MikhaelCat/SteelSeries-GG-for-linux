@@ -337,8 +337,12 @@ jobs:
         with:
           components: llvm-tools-preview
       
-      - name: Install cargo-tarpaulin for coverage
-        run: cargo install cargo-tarpaulin
+      # Pre-install cargo-tarpaulin from binary releases for faster CI
+      - name: Install cargo-tarpaulin
+        run: |
+          curl -L https://github.com/xd009648/tarpaulin/releases/download/v0.28.0/cargo-tarpaulin-0.28.0-x86_64-unknown-linux-gnu.tar.gz | tar xzf -
+          sudo cp cargo-tarpaulin /usr/local/bin/
+          chmod +x /usr/local/bin/cargo-tarpaulin
       
       - name: Run all tests with coverage instrumentation
         run: cargo tarpaulin --out Xml --out Html --all-features --output-dir coverage
