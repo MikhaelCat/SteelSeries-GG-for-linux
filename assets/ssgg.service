@@ -7,20 +7,40 @@ Wants=network-online.target
 [Service]
 Type=simple
 User=%U
+Environment="RUST_LOG=info,ssgg=debug"
 ExecStart=/usr/local/bin/ssgg daemon
 Restart=on-failure
 RestartSec=5s
+StartLimitBurst=3
+StartLimitIntervalSec=60
 StandardOutput=journal
 StandardError=journal
 PrivateNetwork=false
 PrivateTmp=true
-
-# Security hardening
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=read-only
 ReadWritePaths=~/.config/ssgg
 ReadOnlyPaths=/dev /sys
+ProtectControlGroups=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectClock=true
+ProtectHostname=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+MemoryAccounting=true
+MemoryMax=128M
+CPUAccounting=true
+CPUQuota=50%
+
+# Resource limits for minimal footprint
+Nice=10
+IOScheduling=idle
+WorkingDirectory=~
 
 [Install]
 WantedBy=default.target
