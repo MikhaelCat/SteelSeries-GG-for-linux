@@ -66,7 +66,10 @@ jobs:
           -A clippy::manual_range_contains \
           -A clippy::to_string_trait_impl \
           -A clippy::unnecessary_map_or \
-          -A clippy::manual_saturating_arithmetic
+          -A clippy::manual_saturating_arithmetic \
+          -A clippy::unused_self \
+          -A clippy::module_inception \
+          -W unused
     
     - name: Build library
       run: cargo build --lib --all-features

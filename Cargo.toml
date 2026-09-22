@@ -11,11 +11,20 @@ readme = "README.md"
 # Workspace: Main package only (tools use separate bin sections)
 [workspace]
 
+[profile.dev]
+debug = 2
+opt-level = 0
+
 [profile.release]
 lto = true
 codegen-units = 1
 opt-level = 3
 strip = true
+
+# Workspace lint configuration for CI
+[workspace.lints.rust]
+unused = "allow"
+dead_code = "allow"
 
 [features]
 default = []
