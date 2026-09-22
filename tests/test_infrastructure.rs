@@ -204,7 +204,7 @@ pub struct TestFixture {
 
 impl TestFixture {
     pub fn new() -> Self {
-        let temp_dir = TempDir::new().expect("Failed to create temp directory");
+        let temp_dir = tempfile::TempDir::new().expect("Failed to create temp directory");
         let config_path = temp_dir.path().join("config.toml");
         let log_path = temp_dir.path().join("test.log");
 
