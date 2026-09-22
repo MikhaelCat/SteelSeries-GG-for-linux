@@ -264,7 +264,7 @@ async fn main() -> anyhow::Result<()> {
             show_hid_logs().await?;
         }
         Commands::VerifyPerformance => {
-            verify_performance().await?;
+            verify_performance()?;
         }
         Commands::Debug { action } => {
             handle_debug(action)?;
@@ -295,9 +295,7 @@ async fn handle_devices(detailed: bool) -> anyhow::Result<()> {
 }
 
 fn print_devices_summary(devices: &[ssgg::Device]) {
-    use tabled::settings::Style;
     // Removed tabled dependency temporarily due to build issues
-    let _ = Style; // Keep if re-added later
 
     let table_data: Vec<_> = devices.iter().map(|d| DeviceSummary {
         type_str: d.type_str(),
@@ -334,9 +332,9 @@ async fn handle_rgb(action: RgbAction) -> anyhow::Result<()> {
 }
 
 async fn handle_profile(action: ProfileAction) -> anyhow::Result<()> {
-    use ssgg::Config;
+    use ssgg::ConfigManager;
 
-    let config = Config::load_from_home()?;
+    let mut config = ConfigManager::new()?;
 
     match action {
         ProfileAction::List => {
@@ -344,7 +342,8 @@ async fn handle_profile(action: ProfileAction) -> anyhow::Result<()> {
             println!("Available Profiles:\n{}", profiles.join("\n"));
         }
         ProfileAction::Save { name } => {
-            config.save_profile(&name, &ssgg::Profile::default())?;
+            let profile_data = serde_json::to_value(&ssgg::Profile::default()).unwrap();
+            config.save_profile(&name, &profile_data)?;
             println!("Profile '{}' saved successfully", name);
         }
         ProfileAction::Load { name } => {
@@ -369,12 +368,14 @@ async fn handle_mouse(action: MouseAction) -> anyhow::Result<()> {
 
 async fn handle_gamesense(action: GamesenseAction) -> anyhow::Result<()> {
     use ssgg::GameSenseServer;
+    use std::sync::{Arc, RwLock};
 
     match action {
         GamesenseAction::Start => {
             let server = GameSenseServer::new();
             eprintln!("Starting GameSense server on port 27301...");
-            server.serve().await?;
+            let state = Arc::new(RwLock::new(ssgg::GameSenseState::default()));
+            server.serve(state).await?;
         }
         GamesenseAction::Stop => {
             eprintln!("Stopping GameSense server...");
@@ -399,21 +400,16 @@ async fn run_daemon() -> anyhow::Result<()> {
     info!("Initializing ssgg daemon");
 
     // Create device manager
-    let manager = DeviceManager::new()?;
+    let mut manager = DeviceManager::new()?;
     
     // Start monitoring
-    let mut monitor = manager.start_monitoring()?;
+    let _monitor = manager.start_monitoring()?;
 
     info!("Daemon started, listening for device events");
 
     // Keep running until interrupted
     loop {
         tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-        
-        // Process device events
-        while let Some(event) = monitor.try_recv() {
-            info!("Device event: {:?}", event);
-        }
     }
 }
 

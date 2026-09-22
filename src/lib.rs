@@ -15,5 +15,5 @@ pub mod util;
 pub use device::{Device, DeviceType, DeviceManager};
 pub use rgb::{RgbController, RgbEffect, RgbColor};
 pub use mouse::{MouseTracker, MouseHandler};
-pub use gamesense::GameSenseServer;
-pub use config::{Config, Profile};
+pub use gamesense::{GameSenseServer, GameSenseState};
+pub use config::{Config, ConfigManager, Profile};
