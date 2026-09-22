@@ -14,14 +14,14 @@ use thiserror::Error;
 pub struct Config {
     /// GameSense settings
     pub gamesense: GamesenseConfig,
-    
+
     /// Audio settings (if audio feature enabled)
     #[cfg(feature = "audio")]
     pub audio: AudioConfig,
-    
+
     /// General settings
     pub general: GeneralConfig,
-    
+
     /// Custom effect definitions
     pub custom_effects: HashMap<String, CustomEffect>,
 }
@@ -95,16 +95,16 @@ impl Default for EffectTiming {
 pub struct Profile {
     /// Profile name
     pub name: String,
-    
+
     /// Description
     pub description: Option<String>,
-    
+
     /// Active devices in this profile
     pub devices: DeviceProfileMap,
-    
+
     /// Whether this profile is active
     pub is_active: bool,
-    
+
     /// Metadata
     pub created_at: String,
     pub modified_at: String,
@@ -116,19 +116,19 @@ pub type DeviceProfileMap = HashMap<String, DeviceProfile>;
 pub struct DeviceProfile {
     /// RGB configuration
     pub rgb: RgbDeviceConfig,
-    
+
     /// DPI configuration (for mice)
     pub dpi: Option<DpiDeviceConfig>,
-    
+
     /// Actuation points (for keyboards with OmniPoint)
     pub actuation: Option<HashMap<char, f32>>,
-    
+
     /// Macro bindings
     pub macros: HashMap<String, MacroBinding>,
-    
+
     /// Button remapping
     pub button_map: HashMap<u32, u32>,
-    
+
     /// Additional device-specific settings
     pub extra: serde_json::Value,
 }
@@ -173,22 +173,22 @@ pub struct MacroBinding {
 pub enum ConfigError {
     #[error("Configuration directory not found")]
     DirectoryNotFound,
-    
+
     #[error("Configuration not found")]
     ConfigNotFound,
-    
+
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
-    
+
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
-    
+
     #[error("Profile not found: {0}")]
     ProfileNotFound(String),
-    
+
     #[error("Invalid profile format: {0}")]
     InvalidProfile(String),
-    
+
     #[error("Permission denied: {0}")]
     PermissionDenied(String),
 }
@@ -206,19 +206,16 @@ impl ConfigManager {
     /// Create new ConfigManager
     pub fn new() -> ConfigResult<Self> {
         // Get project directories
-        let dirs = ProjectDirs::from(
-            "com",
-            "steelseries-linux",
-            "ssgg",
-        ).ok_or(ConfigError::DirectoryNotFound)?;
-        
+        let dirs = ProjectDirs::from("com", "steelseries-linux", "ssgg")
+            .ok_or(ConfigError::DirectoryNotFound)?;
+
         let config_dir = dirs.config_dir().to_path_buf();
         let data_dir = dirs.data_dir().to_path_buf();
-        
+
         // Create directories if they don't exist
         fs::create_dir_all(&config_dir)?;
         fs::create_dir_all(&data_dir)?;
-        
+
         Ok(Self {
             config_dir,
             data_dir,

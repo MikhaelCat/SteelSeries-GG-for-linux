@@ -38,7 +38,7 @@ pub mod audio {
 
             // In production, this would call PulseAudio API
             tracing::info!("Set {} volume to {}", channel, volume);
-            
+
             Ok(())
         }
 
@@ -86,7 +86,7 @@ pub mod audio {
 #[cfg(not(feature = "audio"))]
 pub mod audio {
     pub struct NotAvailable;
-    
+
     pub fn init_backend() -> &'static str {
         "Audio features require the 'audio' feature flag"
     }

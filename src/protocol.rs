@@ -155,10 +155,10 @@ pub mod keyboard {
     pub struct ActuationProfile {
         /// Actuation point for each key (in mm)
         pub actuation_points: HashMap<char, f32>, // 'a'-'z', '0'-'9', etc.
-        
+
         /// Switch type (mechanical properties)
         pub switch_type: Option<String>,
-        
+
         /// Macro bindings
         pub macros: HashMap<u32, Vec<KeyCode>>,
     }
@@ -215,28 +215,28 @@ pub mod keyboard {
         pub fn build(&self) -> Vec<u8> {
             // Build LED control packet
             let mut packet = vec![self.command_id];
-            
+
             // Zone encoding
             packet.extend_from_slice(&(self.zone_id as u32).to_le_bytes());
-            
+
             // Effect encoding
             packet.push(effect_to_code(&self.effect));
-            
+
             // Color
             if let Some(color) = self.color {
                 packet.extend_from_slice(&color);
             }
-            
+
             // Brightness
             if let Some(brightness) = self.brightness {
                 packet.push((brightness * 255 / 100) as u8);
             }
-            
+
             // Speed
             if let Some(speed) = self.speed {
                 packet.push(speed);
             }
-            
+
             packet
         }
     }
@@ -336,17 +336,17 @@ pub mod mouse {
 
         pub fn build(&self) -> Vec<u8> {
             let mut packet = vec![0x02]; // DPI config command
-            
+
             // Each DPI value encoded as 2 bytes (divided by 100)
             for dpi in self.stages.iter() {
                 let dpi_byte1 = ((dpi / 100) % 256) as u8;
                 let dpi_byte2 = ((dpi / 100) / 256) as u8;
                 packet.extend_from_slice(&[dpi_byte1, dpi_byte2]);
             }
-            
+
             // Active stage (0-4)
             packet.push(self.active_stage as u8);
-            
+
             // Polling rate encoding
             let rate_byte = match self.default_polling_rate {
                 PollingRate::Hz125 => 0,
@@ -358,7 +358,7 @@ pub mod mouse {
                 PollingRate::Hz8000 => 6,
             };
             packet.push(rate_byte);
-            
+
             packet
         }
     }
@@ -377,9 +377,22 @@ pub mod mouse {
         /// OLED packet types
         pub enum OledPacket {
             ClearScreen,
-            DrawPixel { x: u8, y: u8, state: bool },
-            DrawLine { x1: u8, y1: u8, x2: u8, y2: u8, state: bool },
-            DrawImage { bitmap: Vec<u8>, offset: u32 },
+            DrawPixel {
+                x: u8,
+                y: u8,
+                state: bool,
+            },
+            DrawLine {
+                x1: u8,
+                y1: u8,
+                x2: u8,
+                y2: u8,
+                state: bool,
+            },
+            DrawImage {
+                bitmap: Vec<u8>,
+                offset: u32,
+            },
             RefreshScreen,
         }
 
@@ -390,11 +403,18 @@ pub mod mouse {
                     OledPacket::DrawPixel { x, y, state } => {
                         vec![0x11, *x, *y, if *state { 1 } else { 0 }]
                     }
-                    OledPacket::DrawLine { x1, y1, x2, y2, state } => {
+                    OledPacket::DrawLine {
+                        x1,
+                        y1,
+                        x2,
+                        y2,
+                        state,
+                    } => {
                         vec![0x12, *x1, *y1, *x2, *y2, if *state { 1 } else { 0 }]
                     }
                     OledPacket::DrawImage { bitmap, offset } => {
-                        let mut packet = vec![0x13, (*offset & 0xFF) as u8, ((offset >> 8) & 0xFF) as u8];
+                        let mut packet =
+                            vec![0x13, (*offset & 0xFF) as u8, ((offset >> 8) & 0xFF) as u8];
                         packet.extend_from_slice(bitmap);
                         packet
                     }
@@ -467,19 +487,19 @@ pub mod headset {
 
         pub fn build(&self) -> Vec<u8> {
             let mut packet = vec![0x20]; // Audio control command
-            
+
             packet.push(self.channel as u8);
-            
+
             if let Some(vol) = self.volume {
                 packet.push(0x01); // Volume flag
                 packet.push(vol);
             }
-            
+
             if let Some(muted) = self.mute {
                 packet.push(0x02); // Mute flag
                 packet.push(if muted { 1 } else { 0 });
             }
-            
+
             packet
         }
     }
@@ -490,16 +510,16 @@ pub mod headset {
 pub enum ProtocolError {
     #[error("Invalid report format: {0}")]
     InvalidReport(String),
-    
+
     #[error("Command not supported: {0}")]
     CommandNotSupported(String),
-    
+
     #[error("Device communication failed: {0}")]
     Communication(String),
-    
+
     #[error("Firmware error: {0}")]
     FirmwareError(String),
-    
+
     #[error("Checksum mismatch")]
     ChecksumMismatch,
 }

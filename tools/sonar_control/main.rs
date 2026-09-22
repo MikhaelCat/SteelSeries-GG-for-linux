@@ -57,9 +57,7 @@ enum ModeAction {
     Get,
 
     /// Set mode
-    Set {
-        mode: String,
-    },
+    Set { mode: String },
 }
 
 #[derive(Subcommand)]

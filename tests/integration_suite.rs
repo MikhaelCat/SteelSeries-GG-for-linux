@@ -1,5 +1,5 @@
 /// Comprehensive Integration Test Suite for SteelSeries GG Daemon
-/// 
+///
 /// # Integration Test Coverage (400+ Tests)
 /// - Hardware Device Detection & Communication (150 tests)
 /// - RGB Lighting Protocol Integration (100 tests)
@@ -72,10 +72,15 @@ mod device_detection_tests {
 
         for (vid, pid, name) in keyboard_pids {
             let device_info = format!("VID:{:04x} PID:{:04x} {}", vid, pid, name);
-            
+
             // Simulate device detection
             let detected = detect_device(vid, pid);
-            assert!(detected.is_some(), "Should detect {}: {:?}", name, device_info);
+            assert!(
+                detected.is_some(),
+                "Should detect {}: {:?}",
+                name,
+                device_info
+            );
         }
     }
 
@@ -147,7 +152,7 @@ mod device_detection_tests {
     fn test_concurrent_device_enumeration() {
         // Test thread-safe device enumeration under load
         use std::thread;
-        
+
         const NUM_THREADS: usize = 20;
         let results = Arc::new(Mutex::new(Vec::new()));
         let mut handles = vec![];
@@ -156,7 +161,7 @@ mod device_detection_tests {
             let results_clone = Arc::clone(&results);
             let handle = thread::spawn(move || {
                 let devices = enumerate_devices();
-                
+
                 let mut results_guard = results_clone.lock().unwrap();
                 results_guard.push((i, devices.len()));
             });
@@ -168,17 +173,22 @@ mod device_detection_tests {
         }
 
         let final_results = results.lock().unwrap();
-        
+
         // All threads should complete successfully
         assert_eq!(final_results.len(), NUM_THREADS);
-        
+
         // Each enumeration should return consistent results
         let counts: Vec<usize> = final_results.iter().map(|(_, count)| *count).collect();
         let min_count = counts.iter().min().unwrap();
         let max_count = counts.iter().max().unwrap();
-        
+
         // Variation should be minimal (allow for some race conditions)
-        assert!((max_count - min_count) <= 2, "High variation in enumeration: {} to {}", min_count, max_count);
+        assert!(
+            (max_count - min_count) <= 2,
+            "High variation in enumeration: {} to {}",
+            min_count,
+            max_count
+        );
     }
 
     fn enumerate_devices() -> Vec<String> {
@@ -189,15 +199,15 @@ mod device_detection_tests {
     #[test]
     fn test_device_hot_plug_unplug() {
         let db = Arc::new(Mutex::new(MockDeviceDatabase::new()));
-        
+
         // Plug in device
         let device_id = plug_device(Arc::clone(&db));
         assert!(db.lock().unwrap().contains(&device_id));
-        
+
         // Unplug device
         unplug_device(Arc::clone(&db), &device_id);
         assert!(!db.lock().unwrap().contains(&device_id));
-        
+
         // Count should update correctly
         assert_eq!(db.lock().unwrap().count(), 0);
     }
@@ -215,16 +225,16 @@ mod device_detection_tests {
 
 mod rgb_lighting_integration {
     use std::time::{Duration, Instant};
-    
+
     // RGB protocol constants
     const RGB_LED_COUNT_MAX: usize = 50; // Per-key RGB on keyboards
     const RGB_BRIGHTNESS_MAX: u8 = 100;
     const RGB_COLOR_DEPTH: u8 = 24; // 8 bits per channel
-    
+
     #[test]
     fn test_set_single_led_color() {
         let result = set_led_color(0, 255, 0, 0); // LED 0, pure green
-        
+
         assert!(result.is_ok(), "Should set single LED color");
     }
 
@@ -239,30 +249,33 @@ mod rgb_lighting_integration {
     fn test_set_full_keyboard_rgb() {
         // Test setting all keys to same color
         let start = Instant::now();
-        
-        for key in 0..87 { // Standard full-size keyboard has ~87 keys
+
+        for key in 0..87 {
+            // Standard full-size keyboard has ~87 keys
             set_led_color(key, 255, 0, 0).unwrap(); // Red
         }
-        
+
         let duration = start.elapsed();
-        
+
         // Should complete within reasonable time (<100ms)
-        assert!(duration.as_millis() < 100, 
-               "Setting full keyboard RGB took {:?}, expected <100ms", 
-               duration);
+        assert!(
+            duration.as_millis() < 100,
+            "Setting full keyboard RGB took {:?}, expected <100ms",
+            duration
+        );
     }
 
     #[test]
     fn test_rgb_gradient_effect() {
         // Test smooth gradient across LEDs
         let led_count = 50;
-        
+
         for i in 0..led_count {
             let ratio = i as f32 / led_count as f32;
             let r = (ratio * 255.0) as u8;
             let g = ((1.0 - ratio) * 255.0) as u8;
             let b = 0;
-            
+
             set_led_color(i as u32, r, g, b).unwrap();
         }
     }
@@ -305,11 +318,11 @@ mod rgb_lighting_integration {
     fn apply_rgb_effect(effect_name: &str) -> Result<(), String> {
         // Validate effect name against known list
         let valid_effects = ["Rainbow Wave", "Color Cycle", "Breathing"];
-        
+
         if !valid_effects.contains(&effect_name) {
             return Err(format!("Unknown effect: {}", effect_name));
         }
-        
+
         Ok(())
     }
 
@@ -317,32 +330,34 @@ mod rgb_lighting_integration {
     fn test_rgb_performance_latency() {
         // Measure latency for RGB commands
         const ITERATIONS: usize = 100;
-        
+
         let mut latencies = Vec::new();
-        
+
         for _ in 0..ITERATIONS {
             let start = Instant::now();
-            
+
             set_led_color(0, 255, 255, 255).unwrap();
             set_global_brightness(50).unwrap();
-            
+
             let latency = start.elapsed();
             latencies.push(latency.as_nanos());
         }
-        
+
         let avg_latency_ns = latencies.iter().sum::<u128>() / latencies.len() as u128;
         let avg_latency_ms = avg_latency_ns as f64 / 1_000_000.0;
-        
+
         // Average latency should be < 1ms (target professional standard)
-        assert!(avg_latency_ms < 1.0, 
-               "Average RGB latency {:.2}ms exceeds target of 1ms", 
-               avg_latency_ms);
+        assert!(
+            avg_latency_ms < 1.0,
+            "Average RGB latency {:.2}ms exceeds target of 1ms",
+            avg_latency_ms
+        );
     }
 }
 
 mod mouse_tracking_integration {
     use std::time::{Duration, Instant};
-    
+
     // Mouse-specific constants
     const MAX_POLLING_RATE_HZ: u32 = 4000; // 4kHz polling
     const MAX_DPI: u32 = 26000;
@@ -351,11 +366,11 @@ mod mouse_tracking_integration {
     #[test]
     fn test_dpi_setting_accuracy() {
         let dpi_values = vec![400, 800, 1600, 3200, 6400, 12800, 26000];
-        
+
         for dpi in dpi_values {
             let result = set_mouse_dpi(dpi);
             assert!(result.is_ok(), "Should set DPI to {}", dpi);
-            
+
             // Verify the setting persisted
             let current_dpi = get_current_dpi();
             assert_eq!(current_dpi, dpi, "DPI should persist after setting");
@@ -377,11 +392,11 @@ mod mouse_tracking_integration {
     fn test_polling_rate_switching() {
         // Test switching between polling rates
         let polling_rates = vec![125, 250, 500, 1000, 2000, 4000];
-        
+
         for rate in polling_rates {
             let result = set_polling_rate(rate);
             assert!(result.is_ok(), "Should set polling rate to {} Hz", rate);
-            
+
             let current_rate = get_current_polling_rate();
             assert_eq!(current_rate, rate, "Polling rate should persist");
         }
@@ -404,12 +419,7 @@ mod mouse_tracking_integration {
     #[test]
     fn test_acceleration_profiles() {
         // Test different acceleration profiles
-        let profiles = vec![
-            ("Off", 0.0),
-            ("Low", 0.5),
-            ("Medium", 1.0),
-            ("High", 2.0),
-        ];
+        let profiles = vec![("Off", 0.0), ("Low", 0.5), ("Medium", 1.0), ("High", 2.0)];
 
         for (name, factor) in profiles {
             let result = set_acceleration(name, factor);
@@ -428,9 +438,9 @@ mod mouse_tracking_integration {
     fn test_motion_tracking_accuracy() {
         // Test motion tracking precision
         let test_movements = vec![
-            (0, 0),     // No movement
-            (1, 1),     // Single pixel
-            (100, 100), // Small movement
+            (0, 0),       // No movement
+            (1, 1),       // Single pixel
+            (100, 100),   // Small movement
             (1000, 1000), // Large movement
             (-100, -100), // Negative direction
         ];
@@ -453,7 +463,7 @@ mod mouse_tracking_integration {
     fn test_battery_level_monitoring() {
         // Test wireless mouse battery monitoring
         let battery_levels = vec![100, 75, 50, 25, 10, 5, 1];
-        
+
         for level in battery_levels {
             let result = report_battery_level(level);
             assert!(result.is_ok(), "Should report battery level: {}%", level);
@@ -489,27 +499,27 @@ mod mouse_tracking_integration {
 
     fn recognize_gesture(gesture_name: &str) -> Result<(), String> {
         let valid_gestures = ["Swipe Left", "Swipe Right", "Two-Finger Scroll"];
-        
+
         if !valid_gestures.contains(&gesture_name) {
             return Err(format!("Unsupported gesture: {}", gesture_name));
         }
-        
+
         Ok(())
     }
 }
 
 mod sonar_audio_integration {
     use crate::device_detection_tests::detect_headset;
-    
+
     #[test]
     fn test_sonar_driver_initialization() {
         // Test Sonar audio driver startup
         let headset_vid = 0x1246;
         let headset_pid = 0xf101; // Arctis Nova Pro
-        
+
         let detected = detect_headset(headset_vid, headset_pid);
         assert!(detected.is_some(), "Headset should be detected");
-        
+
         let result = initialize_sonar_driver();
         assert!(result.is_ok(), "Sonar driver should initialize");
     }
@@ -522,7 +532,7 @@ mod sonar_audio_integration {
     fn test_volume_control_range() {
         // Test volume control from mute to max
         let volumes = vec![0, 10, 25, 50, 75, 100];
-        
+
         for volume in volumes {
             let result = set_output_volume(volume);
             assert!(result.is_ok(), "Should set output volume: {}", volume);
@@ -553,7 +563,7 @@ mod sonar_audio_integration {
     fn test_chat_mix_balance() {
         // Test chat/game audio balance slider
         let mix_values = vec![-100, -50, 0, 50, 100]; // Game:Chat ratio
-        
+
         for value in mix_values {
             let result = set_chat_mix(value);
             assert!(result.is_ok(), "Should set chat mix to {}", value);
@@ -585,23 +595,23 @@ mod sonar_audio_integration {
 
     fn enable_surround_sound(format_name: &str, enabled: bool) -> Result<(), String> {
         let valid_formats = ["7.1 Surround", "Dolby Atmos", "Windows Sonic", "Stereo"];
-        
+
         if !valid_formats.contains(&format_name) {
             return Err(format!("Unsupported format: {}", format_name));
         }
-        
+
         Ok(())
     }
 }
 
 mod gamesense_protocol_integration {
+    use std::io::{Read, Write};
     use std::net::TcpStream;
-    use std::io::{Write, Read};
-    
+
     // GameSense server endpoint
     const GAMESERVER_HOST: &'static str = "127.0.0.1";
     const GAMESERVER_PORT: u16 = 7788;
-    
+
     #[test]
     fn test_game_presence_detection() {
         // Test detecting which game is running
@@ -652,14 +662,14 @@ mod gamesense_protocol_integration {
     fn test_http_server_responsiveness() {
         // Test GameSense HTTP server responsiveness
         let port = find_available_port();
-        
+
         let result = spawn_gamesense_server(port);
         assert!(result.is_ok(), "Should spawn server on port {}", port);
-        
+
         // Test connectivity
         let response = query_server(port, "/status");
         assert!(response.is_ok(), "Server should respond");
-        
+
         // Cleanup
         stop_gamesense_server(port).unwrap();
     }
@@ -686,15 +696,19 @@ mod gamesense_protocol_integration {
     fn test_event_trigger_correlation() {
         // Test correlating in-game events with lighting effects
         let events = vec![
-            ("Death", 0xFF0000),      // Red
+            ("Death", 0xFF0000),       // Red
             ("Kill Streak", 0xFFC000), // Orange
-            ("Victory", 0xC0C0C0),    // Silver
-            ("Defeat", 0x4B0082),     // Indigo
+            ("Victory", 0xC0C0C0),     // Silver
+            ("Defeat", 0x4B0082),      // Indigo
         ];
 
         for (event, color_hex) in events {
             let result = trigger_event_lighting(event, color_hex);
-            assert!(result.is_ok(), "Should trigger lighting for event: {}", event);
+            assert!(
+                result.is_ok(),
+                "Should trigger lighting for event: {}",
+                event
+            );
         }
     }
 

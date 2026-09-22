@@ -11,17 +11,17 @@ pub fn hex_to_rgb(hex: &str) -> Option<[u8; 3]> {
     if !hex.starts_with('#') || hex.len() != 7 {
         return None;
     }
-    
+
     let r = u8::from_str_radix(&hex[1..3], 16).ok()?;
     let g = u8::from_str_radix(&hex[3..5], 16).ok()?;
     let b = u8::from_str_radix(&hex[5..7], 16).ok()?;
-    
+
     Some([r, g, b])
 }
 
 /// Parse RGB tuple string "(255, 0, 0)" to [u8; 3]
 pub fn tuple_to_rgb(s: &str) -> Option<[u8; 3]> {
-    s.trim_matches(|c| c == '(' || c == ')' )
+    s.trim_matches(|c| c == '(' || c == ')')
         .split(',')
         .map(|s| s.trim().parse::<u8>().ok())
         .collect::<Option<Vec<u8>>>()

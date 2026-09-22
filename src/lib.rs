@@ -1,19 +1,19 @@
 // SteelSeries GG for Linux - Main Library
 // Core functionality and exports
 
-pub mod device;
-pub mod rgb;
-pub mod mouse;
-pub mod gamesense;
 pub mod audio;
 pub mod config;
-pub mod protocol;
+pub mod device;
 pub mod effects;
+pub mod gamesense;
+pub mod mouse;
+pub mod protocol;
+pub mod rgb;
 pub mod util;
 
-/// Re-export commonly used types
-pub use device::{Device, DeviceType, DeviceManager};
-pub use rgb::{RgbController, RgbEffect, RgbColor};
-pub use mouse::{MouseTracker, MouseHandler};
-pub use gamesense::{GameSenseServer, GameSenseState};
 pub use config::{Config, ConfigManager, Profile};
+/// Re-export commonly used types
+pub use device::{Device, DeviceManager, DeviceType};
+pub use gamesense::{GameSenseServer, GameSenseState};
+pub use mouse::{MouseHandler, MouseTracker};
+pub use rgb::{RgbColor, RgbController, RgbEffect};

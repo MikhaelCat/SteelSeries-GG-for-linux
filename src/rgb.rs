@@ -15,16 +15,20 @@ pub struct RgbColor {
 
 impl Default for RgbColor {
     fn default() -> Self {
-        Self { red: 0, green: 0, blue: 0 }
+        Self {
+            red: 0,
+            green: 0,
+            blue: 0,
+        }
     }
 }
 
 /// HSV color representation
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct HsvColor {
-    pub hue: u16,        // 0-359 degrees
-    pub saturation: u8,  // 0-255
-    pub value: u8,       // 0-255
+    pub hue: u16,       // 0-359 degrees
+    pub saturation: u8, // 0-255
+    pub value: u8,      // 0-255
 }
 
 impl RgbColor {
@@ -33,30 +37,66 @@ impl RgbColor {
         if !hex.starts_with('#') {
             return Err(ColorParseError::InvalidFormat);
         }
-        
+
         let hex = &hex[1..];
         if hex.len() != 6 {
             return Err(ColorParseError::InvalidLength);
         }
-        
+
         let r = u8::from_str_radix(&hex[0..2], 16).map_err(|_| ColorParseError::InvalidHex)?;
         let g = u8::from_str_radix(&hex[2..4], 16).map_err(|_| ColorParseError::InvalidHex)?;
         let b = u8::from_str_radix(&hex[4..6], 16).map_err(|_| ColorParseError::InvalidHex)?;
-        
-        Ok(Self { red: r, green: g, blue: b })
+
+        Ok(Self {
+            red: r,
+            green: g,
+            blue: b,
+        })
     }
 
     /// Create from named color
     pub fn from_name(name: &str) -> Option<Self> {
         match name.to_lowercase().as_str() {
-            "red" => Some(RgbColor { red: 255, green: 0, blue: 0 }),
-            "green" => Some(RgbColor { red: 0, green: 255, blue: 0 }),
-            "blue" => Some(RgbColor { red: 0, green: 0, blue: 255 }),
-            "cyan" => Some(RgbColor { red: 0, green: 255, blue: 255 }),
-            "magenta" => Some(RgbColor { red: 255, green: 0, blue: 255 }),
-            "yellow" => Some(RgbColor { red: 255, green: 255, blue: 0 }),
-            "white" => Some(RgbColor { red: 255, green: 255, blue: 255 }),
-            "black" => Some(RgbColor { red: 0, green: 0, blue: 0 }),
+            "red" => Some(RgbColor {
+                red: 255,
+                green: 0,
+                blue: 0,
+            }),
+            "green" => Some(RgbColor {
+                red: 0,
+                green: 255,
+                blue: 0,
+            }),
+            "blue" => Some(RgbColor {
+                red: 0,
+                green: 0,
+                blue: 255,
+            }),
+            "cyan" => Some(RgbColor {
+                red: 0,
+                green: 255,
+                blue: 255,
+            }),
+            "magenta" => Some(RgbColor {
+                red: 255,
+                green: 0,
+                blue: 255,
+            }),
+            "yellow" => Some(RgbColor {
+                red: 255,
+                green: 255,
+                blue: 0,
+            }),
+            "white" => Some(RgbColor {
+                red: 255,
+                green: 255,
+                blue: 255,
+            }),
+            "black" => Some(RgbColor {
+                red: 0,
+                green: 0,
+                blue: 0,
+            }),
             _ => None,
         }
     }
@@ -66,11 +106,11 @@ impl RgbColor {
         let r = self.red as f32 / 255.0;
         let g = self.green as f32 / 255.0;
         let b = self.blue as f32 / 255.0;
-        
+
         let max = r.max(g).max(b);
         let min = r.min(g).min(b);
         let delta = max - min;
-        
+
         let hue = if delta == 0.0 {
             0.0
         } else if max == r {
@@ -80,10 +120,10 @@ impl RgbColor {
         } else {
             60.0 * (((r - g) / delta) + 4.0)
         };
-        
+
         let saturation = if max == 0.0 { 0.0 } else { delta / max };
         let value = max;
-        
+
         HsvColor {
             hue: (hue % 360.0) as u16,
             saturation: (saturation * 255.0) as u8,
@@ -93,13 +133,17 @@ impl RgbColor {
 
     /// Parse RGB tuple string "(255, 0, 0)"
     pub fn from_tuple(s: &str) -> Option<Self> {
-        s.trim_matches(|c| c == '(' || c == ')' )
+        s.trim_matches(|c| c == '(' || c == ')')
             .split(',')
             .map(|s| s.trim().parse::<u8>().ok())
             .collect::<Option<Vec<u8>>>()
             .and_then(|v| {
                 if v.len() == 3 {
-                    Some(RgbColor { red: v[0], green: v[1], blue: v[2] })
+                    Some(RgbColor {
+                        red: v[0],
+                        green: v[1],
+                        blue: v[2],
+                    })
                 } else {
                     None
                 }
@@ -160,22 +204,22 @@ pub enum GradientType {
 pub struct LightingZone {
     /// Zone identifier
     pub id: u32,
-    
+
     /// Zone name (human readable)
     pub name: String,
-    
+
     /// Number of LEDs in this zone (for keyboards: key count)
     pub led_count: u32,
-    
+
     /// Current effect applied to this zone
     pub current_effect: RgbEffect,
-    
+
     /// Current color for static/single-color effects
     pub current_color: RgbColor,
-    
+
     /// Brightness level (0-100)
     pub brightness: u8,
-    
+
     /// Animation speed multiplier (1-10)
     pub speed: u8,
 }
@@ -184,19 +228,19 @@ pub struct LightingZone {
 pub trait RgbController: Send {
     /// Apply color to specific zones
     fn set_zone_color(&mut self, zone_id: u32, color: RgbColor) -> Result<(), RgbError>;
-    
+
     /// Apply an effect to a zone
     fn apply_effect(&mut self, zone_id: u32, effect: &RgbEffect) -> Result<(), RgbError>;
-    
+
     /// Set brightness for all zones
     fn set_global_brightness(&mut self, brightness: u8) -> Result<(), RgbError>;
-    
+
     /// Get current brightness
     fn get_brightness(&self) -> Result<u8, RgbError>;
-    
+
     /// Get list of supported effects
     fn supported_effects(&self) -> Vec<RgbEffect>;
-    
+
     /// Refresh current state
     fn refresh_state(&mut self) -> Result<(), RgbError>;
 }
@@ -205,13 +249,13 @@ pub trait RgbController: Send {
 pub struct RgbControllerImpl {
     /// Device identifier
     device_id: String,
-    
+
     /// All lighting zones
     zones: HashMap<u32, LightingZone>,
-    
+
     /// Global brightness
     global_brightness: u8,
-    
+
     /// Effect timing
     effect_timing: EffectTiming,
 }
@@ -220,7 +264,7 @@ pub struct RgbControllerImpl {
 struct EffectTiming {
     /// Frame interval in milliseconds
     frame_interval_ms: u64,
-    
+
     /// Current frame number
     current_frame: u64,
 }
@@ -269,7 +313,7 @@ impl RgbControllerImpl {
     fn wave_pattern(pos: u32, total: u32, direction: WaveDirection, frame: u64) -> RgbColor {
         let wave_width = 10;
         let wave_pos = ((frame as i64 / 2) % (total as i64 * 2)) as u32;
-        
+
         let distance = if pos <= wave_pos {
             pos.wrapping_sub(wave_pos.saturating_sub(wave_width))
         } else {
@@ -283,7 +327,11 @@ impl RgbControllerImpl {
                 blue: 255, // Magenta wave
             }
         } else {
-            RgbColor { red: 0, green: 0, blue: 0 }
+            RgbColor {
+                red: 0,
+                green: 0,
+                blue: 0,
+            }
         }
     }
 
@@ -309,10 +357,17 @@ impl RgbController for RgbControllerImpl {
     fn apply_effect(&mut self, zone_id: u32, effect: &RgbEffect) -> Result<(), RgbError> {
         if let Some(zone) = self.zones.get_mut(&zone_id) {
             zone.current_effect = effect.clone();
-            
+
             // Initialize default color for effect
-            if zone.current_color.red == 0 && zone.current_color.green == 0 && zone.current_color.blue == 0 {
-                zone.current_color = RgbColor::from_name("cyan").unwrap_or(RgbColor { red: 0, green: 255, blue: 255 });
+            if zone.current_color.red == 0
+                && zone.current_color.green == 0
+                && zone.current_color.blue == 0
+            {
+                zone.current_color = RgbColor::from_name("cyan").unwrap_or(RgbColor {
+                    red: 0,
+                    green: 255,
+                    blue: 255,
+                });
             }
         }
         Ok(())
@@ -323,7 +378,10 @@ impl RgbController for RgbControllerImpl {
             self.global_brightness = brightness;
             Ok(())
         } else {
-            Err(RgbError::InvalidParameter(format!("Brightness {} out of range", brightness)))
+            Err(RgbError::InvalidParameter(format!(
+                "Brightness {} out of range",
+                brightness
+            )))
         }
     }
 
@@ -353,13 +411,13 @@ fn hsv_to_rgb(hue: u16, saturation: u8, value: u8) -> RgbColor {
     let h = hue as f32 / 60.0;
     let s = saturation as f32 / 255.0;
     let v = value as f32 / 255.0;
-    
+
     let i = h as i32;
     let f = h - i as f32;
     let p = v * (1.0 - s);
     let q = v * (1.0 - s * f);
     let t = v * (1.0 - s * (1.0 - f));
-    
+
     match i {
         0 => RgbColor {
             red: (v * 255.0) as u8,
@@ -399,16 +457,16 @@ fn hsv_to_rgb(hue: u16, saturation: u8, value: u8) -> RgbColor {
 pub enum RgbError {
     #[error("Device not found: {0}")]
     DeviceNotFound(String),
-    
+
     #[error("Invalid parameter: {0}")]
     InvalidParameter(String),
-    
+
     #[error("HID communication failed: {0}")]
     CommunicationError(String),
-    
+
     #[error("Invalid color: {0}")]
     InvalidColor(String),
-    
+
     #[error("Not supported: {0}")]
     NotSupported(String),
 }

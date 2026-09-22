@@ -1,5 +1,5 @@
 /// Comprehensive Test Infrastructure Configuration
-/// 
+///
 /// # Complete Test Suite Statistics
 /// - **Security Tests**: 450+ tests covering all CVEs, OWASP Top 10, CWE/SANS Top 25
 /// - **Integration Tests**: 400+ tests for hardware devices, RGB, audio, GameSense
@@ -11,17 +11,17 @@
 /// ```bash
 /// # Run ALL tests (fast mode)
 /// cargo test --all-targets --all-features -- --test-threads=1
-/// 
+///
 /// # Run security tests only (thorough)
 /// cargo test --test security_suite
 /// cargo test --lib security_tests::
-/// 
+///
 /// # Run integration tests (requires root)
 /// sudo cargo test --test integration_suite --features testing
-/// 
+///
 /// # Run performance benchmarks
 /// cargo bench --all-features
-/// 
+///
 /// # Run GUI tests (requires display)
 /// DISPLAY=:0 cargo test --test gui_suite --features gtk4-testing
 /// ```
@@ -134,7 +134,7 @@ pub enum LogLevel {
 
 pub mod test_data_generators {
     use super::*;
-    use rand::{Rng, distributions::Alphanumeric};
+    use rand::{distributions::Alphanumeric, Rng};
     use uuid::Uuid;
 
     pub fn generate_random_device_id() -> String {
@@ -142,7 +142,11 @@ pub mod test_data_generators {
     }
 
     pub fn generate_rgb_color() -> (u8, u8, u8) {
-        (rand::thread_rng().gen(), rand::thread_rng().gen(), rand::thread_rng().gen())
+        (
+            rand::thread_rng().gen(),
+            rand::thread_rng().gen(),
+            rand::thread_rng().gen(),
+        )
     }
 
     pub fn generate_motion_vector() -> (i32, i32) {
@@ -202,10 +206,10 @@ impl TestFixture {
         let temp_dir = TempDir::new().expect("Failed to create temp directory");
         let config_path = temp_dir.path().join("config.toml");
         let log_path = temp_dir.path().join("test.log");
-        
+
         // Create default config
         fs::write(&config_path, "[default]\n").expect("Failed to write config");
-        
+
         Self {
             temp_dir,
             test_config_path: config_path,
@@ -250,7 +254,10 @@ pub fn assert_duration_less_than(duration: Duration, threshold: Duration) {
 
 pub fn assert_result_contains_error<T>(result: Result<T, String>, error_substring: &str) {
     match result {
-        Ok(_) => panic!("Expected error containing '{}', but got success", error_substring),
+        Ok(_) => panic!(
+            "Expected error containing '{}', but got success",
+            error_substring
+        ),
         Err(e) => assert!(
             e.contains(error_substring),
             "Error '{}' does not contain expected substring '{}'",
@@ -381,11 +388,13 @@ impl TestReport {
 
     pub fn print_summary(&self) {
         eprintln!("\n===== Test Report =====");
-        eprintln!("Total: {} | Passed: {} | Failed: {} | Ignored: {}",
-                 self.total_tests, self.passed, self.failed, self.ignored);
+        eprintln!(
+            "Total: {} | Passed: {} | Failed: {} | Ignored: {}",
+            self.total_tests, self.passed, self.failed, self.ignored
+        );
         eprintln!("Success Rate: {:.2}%", self.success_rate());
         eprintln!("Duration: {:?}", self.duration);
-        
+
         if !self.failures.is_empty() {
             eprintln!("\nFailures:");
             for failure in &self.failures {
@@ -410,14 +419,14 @@ where
     F: std::future::Future<Output = R>,
 {
     use tokio::sync::Semaphore;
-    
+
     let semaphore = Arc::new(Semaphore::new(max_concurrent));
     let guard = semaphore.acquire().await.unwrap();
-    
+
     let result = future.await;
-    
+
     drop(guard); // Release permit
-    
+
     result
 }
 

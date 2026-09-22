@@ -297,18 +297,30 @@ async fn handle_devices(detailed: bool) -> anyhow::Result<()> {
 fn print_devices_summary(devices: &[ssgg::Device]) {
     // Removed tabled dependency temporarily due to build issues
 
-    let table_data: Vec<_> = devices.iter().map(|d| DeviceSummary {
-        type_str: d.type_str(),
-        model: d.model_name.clone(),
-        serial: d.serial_number.clone(),
-        firmware: d.firmware_version.clone(),
-    }).collect();
+    let table_data: Vec<_> = devices
+        .iter()
+        .map(|d| DeviceSummary {
+            type_str: d.type_str(),
+            model: d.model_name.clone(),
+            serial: d.serial_number.clone(),
+            firmware: d.firmware_version.clone(),
+        })
+        .collect();
 
     println!("Connected SteelSeries Devices:\n");
-    println!("{}\n", table_data.iter().map(|d| {
-        format!("Type: {}, Model: {}, Serial: {}, Firmware: {}",
-            d.type_str, d.model, d.serial, d.firmware)
-    }).collect::<Vec<_>>().join("\n"));
+    println!(
+        "{}\n",
+        table_data
+            .iter()
+            .map(|d| {
+                format!(
+                    "Type: {}, Model: {}, Serial: {}, Firmware: {}",
+                    d.type_str, d.model, d.serial, d.firmware
+                )
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    );
 }
 
 fn print_devices_detailed(devices: &[ssgg::Device]) {
@@ -401,7 +413,7 @@ async fn run_daemon() -> anyhow::Result<()> {
 
     // Create device manager
     let mut manager = DeviceManager::new()?;
-    
+
     // Start monitoring
     let _monitor = manager.start_monitoring()?;
 
@@ -450,4 +462,3 @@ struct DeviceSummary {
     pub serial: String,
     pub firmware: String,
 }
-

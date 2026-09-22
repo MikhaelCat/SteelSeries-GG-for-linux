@@ -1,11 +1,7 @@
 // GameSense Server Module
 // HTTP API compatible with SteelSeries GameSense protocol
 
-use axum::{
-    extract::State,
-    routing::{get},
-    Router,
-};
+use axum::{extract::State, routing::get, Router};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
@@ -16,13 +12,13 @@ use thiserror::Error;
 pub struct GameSenseState {
     /// Battery levels for connected devices
     pub battery_levels: BATTERY_MAP<String, i32>,
-    
+
     /// Device temperatures
     pub temperatures: HashMap<String, i32>, // in Celsius
-    
+
     /// Volume levels
     pub volume_levels: VolumeLevels,
-    
+
     /// Device activity status
     pub active_devices: Vec<String>,
 }
@@ -41,11 +37,11 @@ pub struct VolumeLevels {
 pub struct EndpointData {
     #[serde(rename = "type")]
     pub endpoint_type: String,
-    
+
     pub key: String,
-    
+
     pub value: serde_json::Value,
-    
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub label: Option<String>,
 }
@@ -63,10 +59,10 @@ pub fn create_gamesense_state(active_devices: Vec<String>) -> Arc<RwLock<GameSen
 pub enum GameSenseError {
     #[error("Server start failed: {0}")]
     ServerStart(String),
-    
+
     #[error("Invalid request format")]
     InvalidRequest,
-    
+
     #[error("Device not found: {0}")]
     DeviceNotFound(String),
 }
@@ -112,45 +108,44 @@ impl GameSenseServer {
     pub async fn serve(self, state: Arc<RwLock<GameSenseState>>) -> GameSenseResult<()> {
         let addr = format!("{}:{}", self.bind_address, self.port);
         let app = self.create_router(state);
-        
+
         let listener = tokio::net::TcpListener::bind(&addr)
             .await
             .map_err(|e| GameSenseError::ServerStart(e.to_string()))?;
-        
+
         tracing::info!("GameSense server starting on {}", addr);
-        
+
         axum::serve(listener, app)
             .await
             .map_err(|e| GameSenseError::ServerStart(e.to_string()))?;
-        
+
         Ok(())
     }
 }
 
 // Request handlers
-async fn handle_state(State(state): State<Arc<RwLock<GameSenseState>>>) 
-    -> axum::response::Json<serde_json::Value>
-{
+async fn handle_state(
+    State(state): State<Arc<RwLock<GameSenseState>>>,
+) -> axum::response::Json<serde_json::Value> {
     let state_read = state.read().unwrap();
-    
-    let endpoints: Vec<EndpointData> = vec![
-        EndpointData {
-            endpoint_type: "device".to_string(),
-            key: "status".to_string(),
-            value: serde_json::json!(true),
-            label: Some("Active".to_string()),
-        },
-    ];
-    
+
+    let endpoints: Vec<EndpointData> = vec![EndpointData {
+        endpoint_type: "device".to_string(),
+        key: "status".to_string(),
+        value: serde_json::json!(true),
+        label: Some("Active".to_string()),
+    }];
+
     axum::response::Json(serde_json::json!({ "endpoints": endpoints }))
 }
 
-async fn handle_battery(State(state): State<Arc<RwLock<GameSenseState>>>) 
-    -> axum::response::Json<serde_json::Value>
-{
+async fn handle_battery(
+    State(state): State<Arc<RwLock<GameSenseState>>>,
+) -> axum::response::Json<serde_json::Value> {
     let state_read = state.read().unwrap();
-    
-    let endpoints: Vec<EndpointData> = state_read.battery_levels
+
+    let endpoints: Vec<EndpointData> = state_read
+        .battery_levels
         .iter()
         .map(|(dev_id, level)| EndpointData {
             endpoint_type: "battery".to_string(),
@@ -159,15 +154,15 @@ async fn handle_battery(State(state): State<Arc<RwLock<GameSenseState>>>)
             label: Some(format!("Battery: {}%", level)),
         })
         .collect();
-    
+
     axum::response::Json(serde_json::json!({ "endpoints": endpoints }))
 }
 
-async fn handle_volume(State(state): State<Arc<RwLock<GameSenseState>>>) 
-    -> axum::response::Json<serde_json::Value> 
-{
+async fn handle_volume(
+    State(state): State<Arc<RwLock<GameSenseState>>>,
+) -> axum::response::Json<serde_json::Value> {
     let state_read = state.read().unwrap();
-    
+
     let endpoints: Vec<EndpointData> = vec![
         EndpointData {
             endpoint_type: "volume".to_string(),
@@ -188,7 +183,7 @@ async fn handle_volume(State(state): State<Arc<RwLock<GameSenseState>>>)
             label: Some(format!("Chat: {}%", state_read.volume_levels.chat)),
         },
     ];
-    
+
     axum::response::Json(serde_json::json!({ "endpoints": endpoints }))
 }
 
@@ -198,22 +193,24 @@ async fn update_volume(
 ) -> axum::response::Json<serde_json::Value> {
     // Parse request body
     // Example: {"channel": "game", "value": 75}
-    
-    let channel = body.get("channel")
+
+    let channel = body
+        .get("channel")
         .and_then(|v| v.as_str())
         .unwrap_or("master");
-    
-    let value = body.get("value")
+
+    let value = body
+        .get("value")
         .and_then(|v| v.as_f64())
         .map(|v| v as i32)
         .unwrap_or(50);
-    
+
     if value < 0 || value > 100 {
         return axum::response::Json(serde_json::json!({"error": "Value must be 0-100"}));
     }
-    
+
     let mut state_write = state.write().unwrap();
-    
+
     {
         match channel {
             "master" => state_write.volume_levels.master = value,
@@ -222,16 +219,17 @@ async fn update_volume(
             _ => return axum::response::Json(serde_json::json!({"error": "Invalid channel"})),
         }
     }
-    
+
     axum::response::Json(serde_json::json!({"updated": true}))
 }
 
-async fn handle_temperature(State(state): State<Arc<RwLock<GameSenseState>>>) 
-    -> axum::response::Json<serde_json::Value>
-{
+async fn handle_temperature(
+    State(state): State<Arc<RwLock<GameSenseState>>>,
+) -> axum::response::Json<serde_json::Value> {
     let state_read = state.read().unwrap();
-    
-    let endpoints: Vec<EndpointData> = state_read.temperatures
+
+    let endpoints: Vec<EndpointData> = state_read
+        .temperatures
         .iter()
         .map(|(dev_id, temp)| EndpointData {
             endpoint_type: "temp".to_string(),
@@ -240,15 +238,15 @@ async fn handle_temperature(State(state): State<Arc<RwLock<GameSenseState>>>)
             label: Some(format!("Temp: {}°C", temp)),
         })
         .collect();
-    
+
     axum::response::Json(serde_json::json!({ "endpoints": endpoints }))
 }
 
-async fn handle_devices(State(state): State<Arc<RwLock<GameSenseState>>>) 
-    -> axum::response::Json<serde_json::Value>
-{
+async fn handle_devices(
+    State(state): State<Arc<RwLock<GameSenseState>>>,
+) -> axum::response::Json<serde_json::Value> {
     let state_read = state.read().unwrap();
-    
+
     axum::response::Json(serde_json::json!({
         "devices": state_read.active_devices,
         "count": state_read.active_devices.len()
@@ -258,14 +256,14 @@ async fn handle_devices(State(state): State<Arc<RwLock<GameSenseState>>>)
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_create_state() {
         let state = create_gamesense_state(vec!["keyboard_1".to_string()]);
         let read = state.read().unwrap();
         assert!(read.active_devices.contains(&"keyboard_1".to_string()));
     }
-    
+
     #[tokio::test]
     async fn test_server_creation() {
         let state = create_gamesense_state(vec![]);
@@ -273,6 +271,9 @@ mod tests {
         let server = GameSenseServer::new();
         let router = server.create_router(state);
         // Test passes if we can create the router without panicking
-        println!("Router created successfully: {:?}", std::any::type_name_of_val(&router));
+        println!(
+            "Router created successfully: {:?}",
+            std::any::type_name_of_val(&router)
+        );
     }
 }

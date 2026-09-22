@@ -24,7 +24,7 @@ fn main() -> anyhow::Result<()> {
 
     if let Some(ref dev_path) = cli.device {
         println!("Device: {}", dev_path);
-        
+
         // This would interact with HID device in production
         eprintln!("Device interaction not yet implemented");
     } else {
@@ -41,19 +41,24 @@ fn simulate_discovery() {
     // Simulated discovery of common actuation points
     println!("Simulated discovery results:");
     println!("{}", "-".repeat(50));
-    
+
     let mut simulated_keys = HashMap::new();
-    
+
     // Common WASD/MOAP keys actuation ranges
     simulated_keys.insert('w', 1.5f32);
     simulated_keys.insert('a', 1.5f32);
     simulated_keys.insert('s', 2.0f32);
     simulated_keys.insert('d', 1.5f32);
-    
+
     for (key, mm) in &simulated_keys {
         println!("{:?}: {:.2}mm", key, mm);
     }
-    
+
     println!("\nNote: Real actuation point probing requires physical device access.");
-    println!("Usage: {} --device /dev/hidrawX", std::env::args().next().unwrap_or_else(|| "discover_actuation".to_string()));
+    println!(
+        "Usage: {} --device /dev/hidrawX",
+        std::env::args()
+            .next()
+            .unwrap_or_else(|| "discover_actuation".to_string())
+    );
 }

@@ -11,25 +11,25 @@ use thiserror::Error;
 pub struct SensorData {
     /// X-axis movement (in DPI units)
     pub dx: i32,
-    
+
     /// Y-axis movement (in DPI units)
     pub dy: i32,
-    
+
     /// Wheel movement (+1 scroll up, -1 scroll down)
     pub wheel: i16,
-    
+
     /// Left button pressed (0 or 1)
     pub left_button: bool,
-    
+
     /// Right button pressed (0 or 1)
     pub right_button: bool,
-    
+
     /// Middle button pressed (0 or 1)
     pub middle_button: bool,
-    
+
     /// Button 4 (back)
     pub button_4: bool,
-    
+
     /// Button 5 (forward)
     pub button_5: bool,
 }
@@ -54,13 +54,13 @@ impl Default for SensorData {
 pub struct DpiStage {
     /// Stage name
     pub name: String,
-    
+
     /// DPI value
     pub dpi: u32,
-    
+
     /// Polling rate in Hz
     pub polling_rate: u32, // typically 125, 500, 1000
-    
+
     /// Acceleration enabled?
     pub acceleration: bool,
 }
@@ -70,10 +70,10 @@ pub struct DpiStage {
 pub struct DpiConfig {
     /// Available stages
     pub stages: Vec<DpiStage>,
-    
+
     /// Currently active stage index
     pub active_stage: usize,
-    
+
     /// Quick-toggle stages (usually 2-3 common values)
     pub quick_toggle_stages: Vec<usize>,
 }
@@ -82,10 +82,30 @@ impl Default for DpiConfig {
     fn default() -> Self {
         Self {
             stages: vec![
-                DpiStage { name: "Low".into(), dpi: 800, polling_rate: 125, acceleration: false },
-                DpiStage { name: "Medium".into(), dpi: 1600, polling_rate: 500, acceleration: false },
-                DpiStage { name: "High".into(), dpi: 3200, polling_rate: 1000, acceleration: false },
-                DpiStage { name: "Ultra".into(), dpi: 6400, polling_rate: 1000, acceleration: true },
+                DpiStage {
+                    name: "Low".into(),
+                    dpi: 800,
+                    polling_rate: 125,
+                    acceleration: false,
+                },
+                DpiStage {
+                    name: "Medium".into(),
+                    dpi: 1600,
+                    polling_rate: 500,
+                    acceleration: false,
+                },
+                DpiStage {
+                    name: "High".into(),
+                    dpi: 3200,
+                    polling_rate: 1000,
+                    acceleration: false,
+                },
+                DpiStage {
+                    name: "Ultra".into(),
+                    dpi: 6400,
+                    polling_rate: 1000,
+                    acceleration: true,
+                },
             ],
             active_stage: 2,
             quick_toggle_stages: vec![1, 2],
@@ -98,19 +118,19 @@ impl Default for DpiConfig {
 pub struct OverlayState {
     /// Current raw sensor data
     pub sensor_data: SensorData,
-    
+
     /// Current DPI
     pub current_dpi: u32,
-    
+
     /// Total distance moved
     pub distance_moved_mm: f64,
-    
+
     /// Last motion timestamp
     pub last_motion_time: Instant,
-    
+
     /// Movement speed (mm/s)
     pub speed_mmps: f64,
-    
+
     /// Frames since last update
     pub frames_since_last_update: u32,
 }
@@ -132,13 +152,13 @@ impl Default for OverlayState {
 pub struct MouseHandler {
     /// HID device connection
     hid_device: Option<HidDevice>,
-    
+
     /// Device information
     device_id: String,
-    
+
     /// DPI configuration
     dpi_config: DpiConfig,
-    
+
     /// Sensor report format (varies by device)
     report_format: ReportFormat,
 }
@@ -154,7 +174,7 @@ enum ReportFormat {
         wheel_offset: usize,
         buttons_offset: usize,
     },
-    
+
     /// Custom SteelSeries extended report
     ExtendedHid {
         report_size: usize,
@@ -164,7 +184,7 @@ enum ReportFormat {
         flags_byte_start: usize,
         flags_mask: u8,
     },
-    
+
     /// USB interrupt endpoint specific
     InterruptEndpoint {
         endpoint: u8,
@@ -178,16 +198,16 @@ enum ReportFormat {
 pub enum MouseError {
     #[error("Device not found")]
     DeviceNotFound,
-    
+
     #[error("HID communication failed: {0}")]
     Communication(String),
-    
+
     #[error("Invalid report format: {0}")]
     InvalidReportFormat(String),
-    
+
     #[error("Failed to parse sensor data: {0}")]
     ParseError(String),
-    
+
     #[error("DPI out of range: {0}")]
     DpiOutOfRange(u32),
 }
@@ -229,11 +249,13 @@ impl MouseHandler {
         if let Some(ref mut hid) = self.hid_device {
             let mut report = [0u8; 64];
             let bytes_read = hid.read_timeout(&mut report, 10)?;
-            
+
             if bytes_read > 0 {
                 return Ok(self.parse_sensor_report(&report));
             } else {
-                Err(MouseError::Communication("Timeout reading sensor".to_string()))?
+                Err(MouseError::Communication(
+                    "Timeout reading sensor".to_string(),
+                ))?
             }
         } else {
             Err(MouseError::DeviceNotFound)?
@@ -243,24 +265,22 @@ impl MouseHandler {
     /// Parse HID report into sensor data
     fn parse_sensor_report(&self, report: &[u8]) -> SensorData {
         match &self.report_format {
-            ReportFormat::StandardHid { 
-                x_offset, 
-                y_offset, 
-                wheel_offset, 
+            ReportFormat::StandardHid {
+                x_offset,
+                y_offset,
+                wheel_offset,
                 buttons_offset,
-                report_size: _  // Ignore this field
-            } => {
-                SensorData {
-                    dx: report[*x_offset] as i8 as i32,
-                    dy: report[*y_offset] as i8 as i32,
-                    wheel: ((report[*wheel_offset] as i16) >> 1) as i16,
-                    left_button: report[*buttons_offset] & 0x01 != 0,
-                    right_button: report[*buttons_offset] & 0x02 != 0,
-                    middle_button: report[*buttons_offset] & 0x04 != 0,
-                    button_4: report[*buttons_offset] & 0x08 != 0,
-                    button_5: report[*buttons_offset] & 0x10 != 0,
-                }
-            }
+                report_size: _, // Ignore this field
+            } => SensorData {
+                dx: report[*x_offset] as i8 as i32,
+                dy: report[*y_offset] as i8 as i32,
+                wheel: ((report[*wheel_offset] as i16) >> 1) as i16,
+                left_button: report[*buttons_offset] & 0x01 != 0,
+                right_button: report[*buttons_offset] & 0x02 != 0,
+                middle_button: report[*buttons_offset] & 0x04 != 0,
+                button_4: report[*buttons_offset] & 0x08 != 0,
+                button_5: report[*buttons_offset] & 0x10 != 0,
+            },
             _ => SensorData::default(),
         }
     }
@@ -289,7 +309,7 @@ impl MouseHandler {
     pub fn calculate_pixel_movement(&self, sensor: &SensorData) -> (i32, i32) {
         let dpi = self.current_dpi() as f64;
         let _pixels_per_mm = dpi / 25.4; // Convert DPI to pixels per mm
-        
+
         // Raw sensor values are in counts at current DPI
         // For display purposes, normalize to show movement regardless of DPI
         (sensor.dx, sensor.dy)
@@ -298,11 +318,11 @@ impl MouseHandler {
     /// Create overlay data structure
     pub fn create_overlay_state(&mut self) -> OverlayState {
         let mut state = OverlayState::default();
-        
+
         if let Some(stage) = self.dpi_config.stages.get(self.dpi_config.active_stage) {
             state.current_dpi = stage.dpi;
         }
-        
+
         state
     }
 }
@@ -311,14 +331,14 @@ impl MouseHandler {
 pub struct OverlayRenderer {
     /// Display backend (X11/Wayland)
     backend: BackendType,
-    
+
     /// Window dimensions
     width: u32,
     height: u32,
-    
+
     /// Overlay visibility
     visible: bool,
-    
+
     /// Rendering frame counter
     frame_counter: u64,
 }
@@ -340,7 +360,7 @@ impl OverlayRenderer {
         } else {
             BackendType::Offscreen
         };
-        
+
         Self {
             backend,
             width: 800,
@@ -374,7 +394,7 @@ impl OverlayRenderer {
         // - Movement arrow indicators
         // - Speed graph
         // - Distance moved counter
-        
+
         tracing::debug!(
             "Frame {}, DPI: {} | dx: {}, dy: {} | Speed: {:.2} mm/s",
             self.frame_counter,
@@ -433,10 +453,10 @@ impl MouseTracker {
 
         // Initialize device
         // self.handler.connect(...)?; // Would use passed HidApi instance
-        
+
         self.renderer.show();
         self.running = true;
-        
+
         Ok(())
     }
 
@@ -459,9 +479,9 @@ impl MouseTracker {
     /// Run main loop
     pub fn run(&mut self, _hid_api: &hidapi::HidApi) -> MouseResult<()> {
         self.start()?;
-        
+
         let mut refresh_timer = Instant::now();
-        
+
         while self.running {
             // Handle control messages
             // ...
@@ -470,20 +490,20 @@ impl MouseTracker {
             if refresh_timer.elapsed() >= Duration::from_millis(16) {
                 let sensor_data = self.handler.read_sensor_data().unwrap_or_default();
                 let _sensor_data = sensor_data;
-                
+
                 // Update overlay state
                 // ...
-                
+
                 // Render overlay
                 self.renderer.render(&OverlayState::default());
-                
+
                 refresh_timer = Instant::now();
             }
-            
+
             // Sleep briefly to avoid busy-waiting
             std::thread::sleep(Duration::from_millis(1));
         }
-        
+
         Ok(())
     }
 }
