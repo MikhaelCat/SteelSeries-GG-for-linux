@@ -267,13 +267,8 @@ mod tests {
     #[tokio::test]
     async fn test_server_creation() {
         let state = create_gamesense_state(vec![]);
-        let _state_read = state.read().unwrap();
         let server = GameSenseServer::new();
-        let router = server.create_router(state);
+        let _router = server.create_router(state);
         // Test passes if we can create the router without panicking
-        println!(
-            "Router created successfully: {:?}",
-            std::any::type_name_of_val(&router)
-        );
     }
 }
