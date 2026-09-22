@@ -32,7 +32,7 @@ base64 = "0.22"              # Secure encoding
 
 # HID & Hardware
 hidapi = "2.6.6"
-rustudev = "0.8"
+udev = "0.9"
 libusb-sys = "0.2"
 
 # Async runtime
