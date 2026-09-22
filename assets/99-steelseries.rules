@@ -1,0 +1,12 @@
+# udev rules for SteelSeries devices
+# Install with: sudo cp 99-steelseries.rules /etc/udev/rules.d/
+# Then run: sudo udevadm control --reload-rules && sudo udevadm trigger
+
+# Allow users in input group to access SteelSeries HID devices
+KERNEL=="hidraw*", ATTRS{idVendor}=="1246", MODE="0660", GROUP="input", TAG+="uaccess"
+
+# Also handle regular hid raw nodes (some kernels use these)
+KERNEL=="hid[0-9]*", ATTRS{idVendor}=="1246", MODE="0660", GROUP="input", TAG+="uaccess"
+
+# Set proper permissions for USB-connected devices
+SUBSYSTEM=="usb", ATTRS{idVendor}=="1246", MODE="0666", GROUP="input"

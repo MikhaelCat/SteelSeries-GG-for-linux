@@ -1,0 +1,26 @@
+[Unit]
+Description=SteelSeries GG Daemon for Linux
+Documentation=https://github.com/qoder/steelseries-linux
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=%U
+ExecStart=/usr/local/bin/ssgg daemon
+Restart=on-failure
+RestartSec=5s
+StandardOutput=journal
+StandardError=journal
+PrivateNetwork=false
+PrivateTmp=true
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=~/.config/ssgg
+ReadOnlyPaths=/dev /sys
+
+[Install]
+WantedBy=default.target
