@@ -3,7 +3,6 @@
 
 use hidapi::HidDevice;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use thiserror::Error;
 
@@ -193,6 +192,12 @@ pub enum MouseError {
     DpiOutOfRange(u32),
 }
 
+impl From<hidapi::HidError> for MouseError {
+    fn from(err: hidapi::HidError) -> Self {
+        MouseError::Communication(format!("HID error: {}", err))
+    }
+}
+
 pub type MouseResult<T> = Result<T, MouseError>;
 
 /// Implementation of MouseHandler
@@ -242,7 +247,8 @@ impl MouseHandler {
                 x_offset, 
                 y_offset, 
                 wheel_offset, 
-                buttons_offset 
+                buttons_offset,
+                report_size: _  // Ignore this field
             } => {
                 SensorData {
                     dx: report[*x_offset] as i8 as i32,
@@ -291,7 +297,7 @@ impl MouseHandler {
 
     /// Create overlay data structure
     pub fn create_overlay_state(&mut self) -> OverlayState {
-        let state = OverlayState::default();
+        let mut state = OverlayState::default();
         
         if let Some(stage) = self.dpi_config.stages.get(self.dpi_config.active_stage) {
             state.current_dpi = stage.dpi;
@@ -355,7 +361,7 @@ impl OverlayRenderer {
     }
 
     /// Render overlay state
-    pub fn render(&self, state: &OverlayState) {
+    pub fn render(&mut self, state: &OverlayState) {
         if !self.visible {
             return;
         }

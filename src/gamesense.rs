@@ -3,10 +3,10 @@
 
 use axum::{
     extract::State,
-    routing::get,
+    routing::{get, post},
     Router,
 };
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use thiserror::Error;
@@ -194,7 +194,7 @@ async fn handle_volume(State(state): State<Arc<RwLock<GameSenseState>>>)
 
 async fn update_volume(
     State(state): State<Arc<RwLock<GameSenseState>>>,
-    body: serde_json::Value,
+    body: axum::Form<serde_json::Value>,
 ) -> axum::response::Json<serde_json::Value> {
     // Parse request body
     // Example: {"channel": "game", "value": 75}
@@ -214,11 +214,13 @@ async fn update_volume(
     
     let mut state_write = state.write().unwrap();
     
-    match channel {
-        "master" => state_write.volume_levels.master = value,
-        "game" => state_write.volume_levels.game = value,
-        "chat" => state_write.volume_levels.chat = value,
-        _ => return axum::response::Json(serde_json::json!({"error": "Invalid channel"}));
+    {
+        match channel {
+            "master" => state_write.volume_levels.master = value,
+            "game" => state_write.volume_levels.game = value,
+            "chat" => state_write.volume_levels.chat = value,
+            _ => return axum::response::Json(serde_json::json!({"error": "Invalid channel"})),
+        }
     }
     
     axum::response::Json(serde_json::json!({"updated": true}))
@@ -247,7 +249,7 @@ async fn handle_devices(State(state): State<Arc<RwLock<GameSenseState>>>)
 {
     let state_read = state.read().unwrap();
     
-    JsonResponse(serde_json::json!({
+    axum::response::Json(serde_json::json!({
         "devices": state_read.active_devices,
         "count": state_read.active_devices.len()
     }))

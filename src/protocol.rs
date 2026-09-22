@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use thiserror::Error;
 
 /// HID Report types
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum ReportType {
     Input,
     Output,
@@ -61,7 +61,7 @@ pub mod keyboard {
     use super::*;
 
     /// Key code mapping (HID usage page 0x07)
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
     #[repr(u8)]
     pub enum KeyCode {
         ErrorNone = 0,

@@ -26,6 +26,12 @@ pub struct Config {
     pub custom_effects: HashMap<String, CustomEffect>,
 }
 
+impl ToString for Config {
+    fn to_string(&self) -> String {
+        format!("Config version: {}", self.general.default_profile)
+    }
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct GamesenseConfig {
     pub enabled: bool,
@@ -330,6 +336,12 @@ impl ConfigManager {
 /// Helper struct for home directory config path
 struct HomeConfigPath {
     path: PathBuf,
+}
+
+impl AsRef<std::path::Path> for HomeConfigPath {
+    fn as_ref(&self) -> &std::path::Path {
+        &self.path
+    }
 }
 
 impl HomeConfigPath {

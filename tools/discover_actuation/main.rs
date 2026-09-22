@@ -40,7 +40,7 @@ fn simulate_discovery() {
 
     // Simulated discovery of common actuation points
     println!("Simulated discovery results:");
-    println!("-".repeat(50));
+    println!("{}", "-".repeat(50));
     
     let mut simulated_keys = HashMap::new();
     
@@ -55,5 +55,5 @@ fn simulate_discovery() {
     }
     
     println!("\nNote: Real actuation point probing requires physical device access.");
-    println!("Usage: {} --device /dev/hidrawX", cli::get_program_name());
+    println!("Usage: {} --device /dev/hidrawX", std::env::args().next().unwrap_or_else(|| "discover_actuation".to_string()));
 }

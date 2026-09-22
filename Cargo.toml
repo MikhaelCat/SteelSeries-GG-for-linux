@@ -71,7 +71,7 @@ gtk4 = { version = "0.10", features = ["v4_16"], optional = true }
 sysinfo = "0.33"
 
 # Terminal output
-tabled = "0.17"
+tabled = { version = "0.17", features = ["derive"] }
 colored = "3.0"
 indicatif = "0.17"
 

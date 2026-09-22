@@ -13,6 +13,12 @@ pub struct RgbColor {
     pub blue: u8,
 }
 
+impl Default for RgbColor {
+    fn default() -> Self {
+        Self { red: 0, green: 0, blue: 0 }
+    }
+}
+
 /// HSV color representation
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct HsvColor {

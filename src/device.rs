@@ -224,7 +224,11 @@ impl DeviceManager {
         let firmware = self.query_firmware(device_info)?;
         
         // Determine connection type
-        let conn_type = Self::connection_type_from_path(device_info.path());
+        let path_str = std::str::from_utf8(device_info.path().to_bytes())
+            .unwrap_or("unknown");
+        let conn_type = Self::connection_type_from_path(
+            std::path::Path::new(path_str)
+        );
         
         // Determine device type from model or PID
         let device_type = Self::device_type_from_pid(pid);
@@ -379,7 +383,9 @@ impl DeviceManager {
 
     /// Connect to a specific device
     pub fn connect(&mut self, device: &Device) -> DeviceResult<()> {
-        let hid_device = self.hid_api.open_path(device.hid_path.clone())?;
+        let path_str = format!("{}\0", device.hid_path);
+        let path_cstr = unsafe { std::ffi::CStr::from_bytes_with_nul_unchecked(path_str.as_bytes()) };
+        let hid_device = self.hid_api.open_path(path_cstr)?;
         self.connections.insert(device.id.clone(), hid_device);
         Ok(())
     }

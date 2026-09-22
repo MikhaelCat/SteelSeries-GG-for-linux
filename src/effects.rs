@@ -3,7 +3,7 @@
 
 use crate::rgb::{RgbColor, RgbEffect};
 use std::collections::HashMap;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use serde::{Deserialize, Serialize};
 
 /// Effect context for calculations
@@ -133,6 +133,7 @@ impl LightingEffect for BreathingEffect {
 pub struct SpectrumEffect {
     base_color: RgbColor,
     hue_offset: u16,
+    config: EffectConfig,  // Added for consistency
 }
 
 impl SpectrumEffect {
@@ -140,6 +141,7 @@ impl SpectrumEffect {
         Self {
             base_color,
             hue_offset: 0,
+            config: EffectConfig::default(),
         }
     }
     
@@ -177,8 +179,8 @@ impl LightingEffect for SpectrumEffect {
     
     fn update(&mut self, delta_ms: u64) {
         let speed_factor = 5.0 / self.config.speed as f32;
-        self.hue_offset = (self.hue_offset as u32 + 
-            ((delta_ms as u32) / (speed_factor * 50.0)).clamp(1, 10) as u16) % 256;
+        let increment = ((delta_ms as f32 / (speed_factor * 50.0)).clamp(1.0, 10.0) as u32).max(1);
+        self.hue_offset = (self.hue_offset as u32 + increment).min(10) as u16 % 256;
     }
 }
 
@@ -189,6 +191,7 @@ pub struct WaveEffect {
     direction: i8, // 1 or -1
     colors: Vec<RgbColor>,
     wave_position: usize,
+    config: EffectConfig,  // Added for consistency
 }
 
 impl WaveEffect {
@@ -199,6 +202,7 @@ impl WaveEffect {
             direction: 1,
             colors,
             wave_position: 0,
+            config: EffectConfig::default(),
         }
     }
     
@@ -218,7 +222,7 @@ impl WaveEffect {
     fn calculate_wave_intensity(&self, zone_id: u32) -> f32 {
         let distance = ((zone_id as i64) - (self.wave_pos as i64)).abs();
         
-        if distance < self.wave_length {
+        if (distance as u32) < self.wave_length {
             (1.0 - (distance as f32 / self.wave_length as f32)).powi(2)
         } else {
             0.0
@@ -244,7 +248,7 @@ impl LightingEffect for WaveEffect {
     }
     
     fn update(&mut self, delta_ms: u64) {
-        let speed_multiplier = 1u64.max(self.config.speed);
+        let speed_multiplier = 1u64.max(self.config.speed as u64);
         let move_steps = (delta_ms / (1000u64.saturating_mul(10).saturating_div(speed_multiplier))).min(20);
         
         for _ in 0..move_steps {

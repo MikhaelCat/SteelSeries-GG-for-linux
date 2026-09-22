@@ -2,7 +2,6 @@
 // Main entry point for ssgg-cli
 
 use clap::{Parser, Subcommand};
-use tracing_subscriber::fmt::format::FmtSpan;
 
 #[derive(Parser)]
 #[command(name = "ssgg")]
@@ -221,12 +220,11 @@ async fn main() -> anyhow::Result<()> {
             tracing_subscriber::EnvFilter::from_default_env()
                 .add_directive(tracing::Level::INFO.into()),
         )
-        .with_span_events(FmtSpan::CLOSED)
         .compact();
 
     if std::env::var_os("RUST_LOG").is_some() || Cli::parse().verbose {
         std::env::set_var("RUST_LOG", "debug");
-        *subscriber.with_target(true).init();
+        subscriber.with_target(true).init();
     } else {
         subscriber.init();
     }
@@ -297,33 +295,33 @@ async fn handle_devices(detailed: bool) -> anyhow::Result<()> {
 }
 
 fn print_devices_summary(devices: &[ssgg::Device]) {
-    use tabled::{Tabled, settings::Style};
+    use tabled::settings::Style;
+    // Removed tabled dependency temporarily due to build issues
+    let _ = Style; // Keep if re-added later
 
     let table_data: Vec<_> = devices.iter().map(|d| DeviceSummary {
         type_str: d.type_str(),
-        model: d.model_name(),
-        serial: d.serial_number(),
-        firmware: d.firmware_version(),
+        model: d.model_name.clone(),
+        serial: d.serial_number.clone(),
+        firmware: d.firmware_version.clone(),
     }).collect();
 
     println!("Connected SteelSeries Devices:\n");
-    println!(
-        "{}\n",
-        tabled::Table::new(table_data)
-            .with(Style::modern())
-            .to_string()
-    );
+    println!("{}\n", table_data.iter().map(|d| {
+        format!("Type: {}, Model: {}, Serial: {}, Firmware: {}",
+            d.type_str, d.model, d.serial, d.firmware)
+    }).collect::<Vec<_>>().join("\n"));
 }
 
 fn print_devices_detailed(devices: &[ssgg::Device]) {
     for (idx, device) in devices.iter().enumerate() {
         println!("=== Device {} ===", idx + 1);
         println!("Type: {}", device.type_str());
-        println!("Model: {}", device.model_name());
-        println!("Serial: {}", device.serial_number());
-        println!("Firmware: {}", device.firmware_version());
-        println!("Connection: {:?}", device.connection_type());
-        println!("Supported Effects: {:?}", device.supported_effects());
+        println!("Model: {}", device.model_name);
+        println!("Serial: {}", device.serial_number);
+        println!("Firmware: {}", device.firmware_version);
+        println!("Connection: {:?}", device.connection_type);
+        println!("Supported Effects: {:?}", device.supported_effects);
         println!();
     }
 }
@@ -460,4 +458,15 @@ struct DeviceSummary {
     serial: String,
     #[tabled(rename = "Firmware")]
     firmware: String,
+}
+
+impl Default for DeviceSummary {
+    fn default() -> Self {
+        Self {
+            type_str: String::default(),
+            model: String::default(),
+            serial: String::default(),
+            firmware: String::default(),
+        }
+    }
 }
