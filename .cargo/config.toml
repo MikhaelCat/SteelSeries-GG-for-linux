@@ -1,0 +1,12 @@
+# Rust & Cargo Configuration
+[build]
+# Uncomment when using sccache:
+# rustc-wrapper = "sccache"
+
+# Enable LLD linker if available (faster linking than GNU ld)
+# Add this line when you install lld or clang:
+# rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+
+[target.x86_64-unknown-linux-gnu]
+linker = "clang"
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]

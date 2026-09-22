@@ -1,0 +1,107 @@
+[package]
+name = "ssgg"
+version = "0.1.0"
+edition = "2021"
+description = "Native Linux SteelSeries GG replacement"
+authors = ["Qoder Development Team"]
+license = "MIT"
+repository = "https://github.com/qoder/steelseries-linux"
+readme = "README.md"
+
+[workspace]
+members = [".", "tools/sonar_control", "tools/discover_actuation"]
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+strip = true
+
+[features]
+default = []
+audio = ["libpulse-binding"]       # Audio mixing support
+sonar = ["reqwest"]                # Sonar HTTP API integration
+experimental-apex-2023 = []        # Experimental Apex Pro TKL 2023 support
+wayland-overlay = []              # Wayland screen capture for mouse tracker
+
+[dependencies]
+# HID & Hardware
+hidapi = "2.6.6"
+rustudev = "0.8"
+libusb-1.0 = "0.5"
+
+# Async runtime
+tokio = { version = "1.42", features = ["full"] }
+tokio-util = "0.7"
+
+# CLI parsing
+clap = { version = "4.5", features = ["derive"] }
+
+# HTTP Server (GameSense)
+axum = "0.8"
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors"] }
+
+# HTTP Client (Sonar)
+reqwest = { version = "0.12", features = ["json"], optional = true }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_cbor = "0.11"
+
+# Error handling
+thiserror = "2.0"
+anyhow = "1.0"
+
+# Logging & Tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# UI Framework (GTK4)
+gtk4 = { version = "0.10", features = ["v4_16"], optional = true }
+gtk4-css-proc = "0.1"
+
+# System info
+sysinfo = "0.33"
+
+# Terminal output
+tabled = "0.17"
+colored = "3.0"
+indicatif = "0.17"
+
+# Time
+chrono = { version = "0.4", features = ["serde"] }
+
+# UUID
+uuid = { version = "1.11", features = ["v4"] }
+
+# Configuration
+toml = "0.8"
+directories = "6.0"
+
+# PulseAudio (optional)
+libpulse-binding = { version = "2.0", optional = true }
+
+# Image processing (for OLED, icons)
+image = "0.25"
+
+[dev-dependencies]
+tempfile = "3.15"
+mockall = "0.13"
+
+[[bin]]
+name = "ssgg"
+path = "src/main.rs"
+
+[[bin]]
+name = "sonar_control"
+path = "tools/sonar_control/main.rs"
+required-features = ["sonar"]
+
+[[bin]]
+name = "discover_actuation"
+path = "tools/discover_actuation/main.rs"
+
+# Build optimizations
+[build-dependencies]
