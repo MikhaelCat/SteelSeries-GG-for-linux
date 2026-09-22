@@ -3,11 +3,11 @@
 
 use axum::{
     extract::State,
-    http::StatusCode,
     routing::get,
     Router,
 };
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use thiserror::Error;
 
@@ -129,7 +129,7 @@ impl GameSenseServer {
 
 // Request handlers
 async fn handle_state(State(state): State<Arc<RwLock<GameSenseState>>>) 
-    -> impl axum::response::IntoResponse 
+    -> axum::response::Json<serde_json::Value>
 {
     let state_read = state.read().unwrap();
     
@@ -142,11 +142,11 @@ async fn handle_state(State(state): State<Arc<RwLock<GameSenseState>>>)
         },
     ];
     
-    (StatusCode::OK, serde_json::json!({ "endpoints": endpoints }))
+    axum::response::Json(serde_json::json!({ "endpoints": endpoints }))
 }
 
 async fn handle_battery(State(state): State<Arc<RwLock<GameSenseState>>>) 
-    -> impl axum::response::IntoResponse 
+    -> axum::response::Json<serde_json::Value>
 {
     let state_read = state.read().unwrap();
     
@@ -160,11 +160,11 @@ async fn handle_battery(State(state): State<Arc<RwLock<GameSenseState>>>)
         })
         .collect();
     
-    (StatusCode::OK, serde_json::json!({ "endpoints": endpoints }))
+    axum::response::Json(serde_json::json!({ "endpoints": endpoints }))
 }
 
 async fn handle_volume(State(state): State<Arc<RwLock<GameSenseState>>>) 
-    -> impl axum::response::IntoResponse 
+    -> axum::response::Json<serde_json::Value> 
 {
     let state_read = state.read().unwrap();
     
@@ -189,13 +189,13 @@ async fn handle_volume(State(state): State<Arc<RwLock<GameSenseState>>>)
         },
     ];
     
-    (StatusCode::OK, serde_json::json!({ "endpoints": endpoints }))
+    axum::response::Json(serde_json::json!({ "endpoints": endpoints }))
 }
 
 async fn update_volume(
     State(state): State<Arc<RwLock<GameSenseState>>>,
     body: serde_json::Value,
-) -> impl axum::response::IntoResponse {
+) -> axum::response::Json<serde_json::Value> {
     // Parse request body
     // Example: {"channel": "game", "value": 75}
     
@@ -204,11 +204,12 @@ async fn update_volume(
         .unwrap_or("master");
     
     let value = body.get("value")
-        .and_then(|v| v.as_i32())
+        .and_then(|v| v.as_f64())
+        .map(|v| v as i32)
         .unwrap_or(50);
     
     if value < 0 || value > 100 {
-        return (StatusCode::BAD_REQUEST, serde_json::json!({"error": "Value must be 0-100"}));
+        return axum::response::Json(serde_json::json!({"error": "Value must be 0-100"}));
     }
     
     let mut state_write = state.write().unwrap();
@@ -217,14 +218,14 @@ async fn update_volume(
         "master" => state_write.volume_levels.master = value,
         "game" => state_write.volume_levels.game = value,
         "chat" => state_write.volume_levels.chat = value,
-        _ => return (StatusCode::BAD_REQUEST, serde_json::json!({"error": "Invalid channel"})),
+        _ => return axum::response::Json(serde_json::json!({"error": "Invalid channel"}));
     }
     
-    (StatusCode::OK, serde_json::json!({"updated": true}))
+    axum::response::Json(serde_json::json!({"updated": true}))
 }
 
 async fn handle_temperature(State(state): State<Arc<RwLock<GameSenseState>>>) 
-    -> impl axum::response::IntoResponse 
+    -> axum::response::Json<serde_json::Value>
 {
     let state_read = state.read().unwrap();
     
@@ -238,18 +239,18 @@ async fn handle_temperature(State(state): State<Arc<RwLock<GameSenseState>>>)
         })
         .collect();
     
-    (StatusCode::OK, serde_json::json!({ "endpoints": endpoints }))
+    axum::response::Json(serde_json::json!({ "endpoints": endpoints }))
 }
 
 async fn handle_devices(State(state): State<Arc<RwLock<GameSenseState>>>) 
-    -> impl axum::response::IntoResponse 
+    -> axum::response::Json<serde_json::Value>
 {
     let state_read = state.read().unwrap();
     
-    serde_json::json!({
+    JsonResponse(serde_json::json!({
         "devices": state_read.active_devices,
         "count": state_read.active_devices.len()
-    })
+    }))
 }
 
 #[cfg(test)]

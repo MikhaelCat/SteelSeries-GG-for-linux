@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use thiserror::Error;
 
 /// All supported SteelSeries device types
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum DeviceType {
     Keyboard,
     Mouse,
@@ -29,7 +29,7 @@ impl std::fmt::Display for DeviceType {
 }
 
 /// Connection type for devices
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ConnectionType {
     WiredUSB,
     Wireless24GHz,
@@ -97,7 +97,7 @@ pub enum DeviceError {
     AccessDenied(String),
     
     #[error("HID operation failed: {0}")]
-    HidOperation(#[from] hidapi::HidFailure),
+    HidOperation(String),
     
     #[error("Invalid device format: {0}")]
     InvalidFormat(String),

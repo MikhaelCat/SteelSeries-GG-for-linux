@@ -13,6 +13,14 @@ pub struct RgbColor {
     pub blue: u8,
 }
 
+/// HSV color representation
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct HsvColor {
+    pub hue: u16,        // 0-359 degrees
+    pub saturation: u8,  // 0-255
+    pub value: u8,       // 0-255
+}
+
 impl RgbColor {
     /// Create from hex string (e.g., "#FF5500")
     pub fn from_hex(hex: &str) -> Result<Self, ColorParseError> {

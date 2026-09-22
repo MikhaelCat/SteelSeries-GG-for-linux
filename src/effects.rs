@@ -2,6 +2,7 @@
 // Generates RGB lighting effects with animations and transitions
 
 use crate::rgb::{RgbColor, RgbEffect};
+use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use serde::{Deserialize, Serialize};
 
@@ -175,13 +176,9 @@ impl LightingEffect for SpectrumEffect {
     }
     
     fn update(&mut self, delta_ms: u64) {
-        let speed_factor = 5.0 / self.config().speed as f32;
+        let speed_factor = 5.0 / self.config.speed as f32;
         self.hue_offset = (self.hue_offset as u32 + 
             ((delta_ms as u32) / (speed_factor * 50.0)).clamp(1, 10) as u16) % 256;
-    }
-    
-    fn config(&self) -> EffectConfig {
-        EffectConfig::default()
     }
 }
 
@@ -247,23 +244,17 @@ impl LightingEffect for WaveEffect {
     }
     
     fn update(&mut self, delta_ms: u64) {
-        let speed_multiplier = self.config().speed as u64;
-        let move_steps = (delta_ms / (1000 / speed_multiplier)).min(20);
+        let speed_multiplier = 1u64.max(self.config.speed);
+        let move_steps = (delta_ms / (1000u64.saturating_mul(10).saturating_div(speed_multiplier))).min(20);
         
         for _ in 0..move_steps {
             self.wave_pos = self.wave_pos.wrapping_add(self.direction as u32);
-            
-            // Move color index independently for smoother gradient
             self.wave_position = if self.direction > 0 {
                 (self.wave_position + 1) % self.colors.len()
             } else {
-                self.wave_position.wrapping_sub(1).unwrap_or(0)
+                self.wave_position.checked_sub(1).unwrap_or(0)
             };
         }
-    }
-    
-    fn config(&self) -> EffectConfig {
-        EffectConfig::default()
     }
 }
 
