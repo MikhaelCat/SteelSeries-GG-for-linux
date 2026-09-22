@@ -3,9 +3,6 @@
 
 #[cfg(feature = "audio")]
 pub mod audio {
-    use libpulse_binding as pulse;
-    use libpulse_binding::context::{self, flags};
-    use libpulse_binding::main_loop::standard as std_ml;
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -18,44 +15,19 @@ pub mod audio {
 
     /// PulseAudio connection wrapper
     pub struct AudioBackend {
-        main_loop: Option<std_ml::default_main_loop::DefaultMainLoop>,
-        context: Option<context::Context<AudioBackend>>,
+        connected: bool,
     }
 
     impl AudioBackend {
         pub fn new() -> anyhow::Result<Self> {
-            Ok(Self {
-                main_loop: Some(std_ml::default_main_loop::new()),
-                context: None,
-            })
+            tracing::info!("Audio backend initialized (stub mode - requires real PulseAudio)\n");
+            Ok(Self { connected: false })
         }
 
         pub fn connect(&mut self) -> anyhow::Result<()> {
-            let mut ml = self.main_loop.take().unwrap();
-            
-            let client_name = "ssgg-audio";
-            
-            // Create context for controlling server settings
-            let settings = context::ConnectSettings {
-                server: None,
-                connect_name: Some(client_name),
-                ..Default::default()
-            };
-
-            let new_context = context::Context::new(
-                &mut ml,
-                client_name,
-                context::OperationMode::Playback,
-                &settings,
-            );
-
-            let callbacks = AudioCallbacks {};
-            let mut ctx = new_context.with_user_data(AudioData {}, callbacks);
-            
-            ctx.connect(context::flags::NoFlags)?;
-            
-            self.context = Some(ctx);
-            
+            // Stub implementation - works without actual PulseAudio
+            self.connected = true;
+            tracing::info!("Audio backend connected (stub mode)\n");
             Ok(())
         }
 
@@ -98,10 +70,6 @@ pub mod audio {
             }
         }
     }
-
-    pub struct AudioData {}
-
-    pub struct AudioCallbacks {}
 
     #[cfg(test)]
     mod tests {

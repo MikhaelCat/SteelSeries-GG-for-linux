@@ -324,7 +324,7 @@ fn print_devices_detailed(devices: &[ssgg::Device]) {
     }
 }
 
-async fn handle_rgb(action: RgbAction) -> anyhow::Result<()> {
+async fn handle_rgb(_action: RgbAction) -> anyhow::Result<()> {
     // For now, communicate with daemon via D-Bus or socket
     // Implementation pending daemon setup
     eprintln!("RGB control requires running daemon (start with: ssgg daemon)");
@@ -347,7 +347,7 @@ async fn handle_profile(action: ProfileAction) -> anyhow::Result<()> {
             println!("Profile '{}' saved successfully", name);
         }
         ProfileAction::Load { name } => {
-            let profile = config.load_profile(&name)?;
+            let _profile = config.load_profile(&name)?;
             println!("Loaded profile: {}", name);
             // Apply profile here
         }
@@ -360,7 +360,7 @@ async fn handle_profile(action: ProfileAction) -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn handle_mouse(action: MouseAction) -> anyhow::Result<()> {
+async fn handle_mouse(_action: MouseAction) -> anyhow::Result<()> {
     // Mouse tracking implementation pending
     eprintln!("Mouse tracking feature coming soon");
     std::process::exit(1);
@@ -388,7 +388,7 @@ async fn handle_gamesense(action: GamesenseAction) -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn handle_audio(action: AudioAction) -> anyhow::Result<()> {
+async fn handle_audio(_action: AudioAction) -> anyhow::Result<()> {
     eprintln!("Audio features require 'audio' feature flag");
     std::process::exit(1);
 }
