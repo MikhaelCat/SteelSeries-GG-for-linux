@@ -35,9 +35,9 @@ jobs:
     
     - name: Install sccache
       run: |
-        curl -LO https://github.com/mozilla/sccache/releases/download/v0.6.4/sccache-v0.6.4-x86_64-unknown-linux-musl.tar.gz
-        tar xzf sccache-v0.6.4-x86_64-unknown-linux-musl.tar.gz
-        sudo install sccache-v0.6.4-x86_64-unknown-linux-musl/sccache /usr/local/bin/
+        # Use official pre-built binary for glibc
+        curl -L https://github.com/mozilla/sccache/releases/download/v0.8.4/sccache-v0.8.4-x86_64-unknown-linux-gnu.tar.gz | tar xzf -
+        sudo install sccache-v0.8.4-x86_64-unknown-linux-gnu/sccache /usr/local/bin/
         chmod +x /usr/local/bin/sccache
     
     - name: Configure Cache
