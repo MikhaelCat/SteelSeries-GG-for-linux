@@ -58,7 +58,8 @@ impl HidReport {
 
 /// Keyboard protocols
 pub mod keyboard {
-    use super::*;
+    use serde::{Deserialize, Serialize};
+    use std::collections::HashMap;
 
     /// Key code mapping (HID usage page 0x07)
     #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -265,7 +266,7 @@ pub mod keyboard {
 
 /// Mouse protocols
 pub mod mouse {
-    use super::*;
+    use serde::{Deserialize, Serialize};
 
     /// DPI sensor reading mode
     #[derive(Debug, Clone, Copy, Default)]
@@ -364,7 +365,7 @@ pub mod mouse {
 
     /// OLED display commands for mice
     pub mod oled {
-        use super::*;
+        // Test imports are fine
 
         /// Screen resolution (varies by device)
         #[derive(Debug, Clone, Copy, Default)]
@@ -406,7 +407,7 @@ pub mod mouse {
 
 /// Headset protocols
 pub mod headset {
-    use super::*;
+    use serde::{Deserialize, Serialize};
 
     /// Audio channel types
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]

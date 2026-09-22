@@ -94,6 +94,7 @@ image = "0.25"
 [dev-dependencies]
 tempfile = "3.15"
 mockall = "0.13"
+rand = "0.8"
 
 [[bin]]
 name = "ssgg"

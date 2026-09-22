@@ -218,7 +218,7 @@ impl MouseHandler {
     }
 
     /// Connect to mouse device
-    pub fn connect(&mut self, hid_api: &hidapi::HidApi) -> MouseResult<()> {
+    pub fn connect(&mut self, _hid_api: &hidapi::HidApi) -> MouseResult<()> {
         // This would need actual device path from DeviceManager
         // For now, placeholder implementation
         Ok(())
@@ -288,7 +288,7 @@ impl MouseHandler {
     /// Calculate pixel movement from raw sensor data
     pub fn calculate_pixel_movement(&self, sensor: &SensorData) -> (i32, i32) {
         let dpi = self.current_dpi() as f64;
-        let pixels_per_mm = dpi / 25.4; // Convert DPI to pixels per mm
+        let _pixels_per_mm = dpi / 25.4; // Convert DPI to pixels per mm
         
         // Raw sensor values are in counts at current DPI
         // For display purposes, normalize to show movement regardless of DPI
@@ -386,7 +386,7 @@ impl OverlayRenderer {
     }
 
     /// Set overlay position
-    pub fn set_position(&mut self, x: i32, y: i32) {
+    pub fn set_position(&mut self, _x: i32, _y: i32) {
         // Position handling
     }
 
@@ -457,7 +457,7 @@ impl MouseTracker {
     }
 
     /// Run main loop
-    pub fn run(&mut self, hid_api: &hidapi::HidApi) -> MouseResult<()> {
+    pub fn run(&mut self, _hid_api: &hidapi::HidApi) -> MouseResult<()> {
         self.start()?;
         
         let mut refresh_timer = Instant::now();
@@ -469,6 +469,7 @@ impl MouseTracker {
             // Read sensor data every ~16ms (60 FPS target)
             if refresh_timer.elapsed() >= Duration::from_millis(16) {
                 let sensor_data = self.handler.read_sensor_data().unwrap_or_default();
+                let _sensor_data = sensor_data;
                 
                 // Update overlay state
                 // ...

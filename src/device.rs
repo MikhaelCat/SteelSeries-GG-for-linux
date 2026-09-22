@@ -322,14 +322,14 @@ impl DeviceManager {
     }
 
     /// Determine connection type from device path
-    fn connection_type_from_path(path: &std::path::Path) -> ConnectionType {
+    fn connection_type_from_path(_path: &std::path::Path) -> ConnectionType {
         // Simple heuristic - wireless devices often have multiple interfaces
         // This should be improved with actual device querying
         ConnectionType::WiredUSB
     }
 
     /// Query firmware version from device
-    fn query_firmware(&self, device_info: &hidapi::DeviceInfo) -> DeviceResult<String> {
+    fn query_firmware(&self, _device_info: &hidapi::DeviceInfo) -> DeviceResult<String> {
         // Try to open device and query firmware
         // Implementation varies by device type
         
@@ -368,7 +368,7 @@ impl DeviceManager {
     }
 
     /// Get RGB zone count for device
-    fn rgb_zones_for_device(device_type: &DeviceType, pid: u16) -> u32 {
+    fn rgb_zones_for_device(device_type: &DeviceType, _pid: u16) -> u32 {
         match device_type {
             DeviceType::Keyboard => {
                 // Keyboards typically have per-key RGB (61-104 keys)

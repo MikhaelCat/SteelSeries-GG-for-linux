@@ -4,9 +4,9 @@
 use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::fs::{self, File};
+use std::fs::{self};
 use std::io::{BufReader, BufWriter};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use thiserror::Error;
 
 /// Global configuration structure
@@ -229,8 +229,10 @@ impl ConfigManager {
     /// Load configuration from home directory
     pub fn load_from_home() -> ConfigResult<Config> {
         // Try loading from default home location
-        let config = ConfigManager::load_from_home()?;
-        Ok(config)
+        loop {
+            let config = ConfigManager::load_from_home()?;
+            return Ok(config);
+        }
     }
 
     /// List available profiles

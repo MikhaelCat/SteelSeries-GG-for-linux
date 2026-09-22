@@ -86,7 +86,7 @@ pub struct BreathingEffect {
 }
 
 impl BreathingEffect {
-    pub fn new(color: RgbColor) -> Self {
+    pub fn new(_color: RgbColor) -> Self {
         Self {
             config: EffectConfig::default(),
             phase: 0.0,

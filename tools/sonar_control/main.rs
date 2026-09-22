@@ -2,7 +2,6 @@
 // Requires 'sonar' feature flag enabled
 
 use clap::{Parser, Subcommand};
-use std::collections::HashMap;
 
 #[derive(Parser)]
 #[command(name = "sonar_control")]
@@ -68,12 +67,13 @@ enum StreamerAction {
     /// Configure streaming
     Streaming {
         source: String,
-        channels: HashMap<String, u8>, // channel -> level
+        // For now, use a placeholder format "channel:level,..."
+        channels: String, // "game:70,chat:50,..."
     },
 
     /// Configure monitoring
     Monitoring {
-        channels: HashMap<String, u8>, // channel -> level
+        channels: String, // "device:100,mic:80,..."
     },
 
     /// Get current streaming config
@@ -116,7 +116,7 @@ async fn main() -> anyhow::Result<()> {
             }
             Ok(())
         }
-        Commands::Streamer { action } => {
+        Commands::Streamer { .. } => {
             eprintln!("Streamer configuration not yet implemented");
             Ok(())
         }
