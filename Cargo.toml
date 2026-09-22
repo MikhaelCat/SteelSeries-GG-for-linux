@@ -109,5 +109,11 @@ required-features = ["sonar"]
 name = "discover_actuation"
 path = "tools/discover_actuation/main.rs"
 
+# Performance suite excluded - uses unstable test::Bencher API
+[[test]]
+name = "performance_suite"
+path = "tests/performance_suite.rs"
+ignored = true
+
 # Build optimizations
 [build-dependencies]
