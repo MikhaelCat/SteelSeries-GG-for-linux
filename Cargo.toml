@@ -8,8 +8,8 @@ license = "MIT"
 repository = "https://github.com/qoder/steelseries-linux"
 readme = "README.md"
 
+# Workspace: Main package only (tools use separate bin sections)
 [workspace]
-members = [".", "tools/sonar_control", "tools/discover_actuation"]
 
 [profile.release]
 lto = true
