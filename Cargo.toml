@@ -65,7 +65,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # UI Framework (GTK4 - optional)
-gtk4 = { version = "0.10", features = ["v4_16"], optional = true }
+gtk4 = { version = "0.10", features = ["v4_14"], optional = true }
 
 # System info
 sysinfo = "0.33"
