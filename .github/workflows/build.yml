@@ -33,23 +33,8 @@ jobs:
         components: rustfmt, clippy
         targets: x86_64-unknown-linux-gnu
     
-    - name: Install sccache
-      run: |
-        # Download and install sccache for glibc Linux
-        ARCHIVE=$(mktemp)
-        curl -L -o $ARCHIVE https://github.com/mozilla/sccache/releases/download/v0.8.4/sccache-v0.8.4-x86_64-unknown-linux-gnu.tar.gz
-        
-        # Verify download success
-        if [ ! -s $ARCHIVE ]; then
-          echo "Failed to download sccache archive"
-          exit 1
-        fi
-        
-        # Extract and install
-        tar xzf $ARCHIVE
-        sudo install sccache-v0.8.4-x86_64-unknown-linux-gnu/sccache /usr/local/bin/
-        chmod +x /usr/local/bin/sccache
-        rm -f $ARCHIVE
+    # Note: sccache removed - using native Cargo caching instead
+    # Mozilla/sccache no longer provides compatible binaries for Linux x86_64
     
     - name: Configure Cache
       uses: actions/cache@v4
