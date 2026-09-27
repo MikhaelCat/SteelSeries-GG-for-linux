@@ -54,7 +54,8 @@ jobs:
           libhidapi-dev \
           pkg-config \
           build-essential \
-          libglib-2.0-dev \
+          libglib2.0-dev \
+          gir1.2-glib-2.0 \
           libudev-dev
     
     - name: Setup Rust
@@ -89,6 +90,8 @@ jobs:
           libhidapi-dev \
           pkg-config \
           build-essential \
+          libglib2.0-dev \
+          gir1.2-glib-2.0 \
           libudev-dev
     
     - name: Install minimal Rust version
@@ -112,7 +115,8 @@ jobs:
           libhidapi-dev \
           pkg-config \
           build-essential \
-          libglib-2.0-dev \
+          libglib2.0-dev \
+          gir1.2-glib-2.0 \
           libudev-dev
     
     - name: Install cargo-fuzz
