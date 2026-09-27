@@ -92,7 +92,8 @@ jobs:
           build-essential \
           libglib2.0-dev \
           gir1.2-glib-2.0 \
-          libudev-dev
+          libudev-dev \
+          libusb-1.0-dev
     
     - name: Install minimal Rust version
       uses: dtolnay/rust-toolchain@1.97.1
