@@ -23,11 +23,13 @@ jobs:
     - name: Setup Rust
       uses: dtolnay/rust-toolchain@stable
     
+    - name: Install cargo-audit
+      run: |
+        cargo install --locked cargo-audit
+    
     - name: Run cargo-audit
-      uses: actions-rs/cargo@v1
-      with:
-        command: audit
-        args: --all-features
+      run: |
+        cargo audit --all-features
     
   dependency-review:
     runs-on: ubuntu-latest
