@@ -11,8 +11,38 @@ env:
   RUST_BACKTRACE: full
 
 jobs:
+  detect-code-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      needs-build: ${{ steps.changes.outputs.build }}
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Detect code changes
+      id: changes
+      run: |
+        if [ "${{ github.event_name }}" == "push" ]; then
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }})
+        else
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }})
+        fi
+        
+        echo "Changed files: $CHANGED_FILES"
+        
+        NEEDS_BUILD="false"
+        for file in $CHANGED_FILES; do
+          if [[ "$file" == src/* ]] || [[ "$file" == Cargo.toml ]] || [[ "$file" == Cargo.lock ]] || [[ "$file" == assets/* ]]; then
+            NEEDS_BUILD="true"
+            break
+          fi
+        done
+        
+        echo "Build needed: $NEEDS_BUILD"
+        echo "build=$NEEDS_BUILD" >> $GITHUB_OUTPUT
+
   check:
     runs-on: ubuntu-latest
+    if: needs-detect-code-changes.outputs.needs-build == 'true' || github.event_name == 'schedule'
     
     steps:
     - uses: actions/checkout@v4
@@ -83,8 +113,9 @@ jobs:
       run: cargo test --all-features
     
   build-debug:
-    needs: check
+    needs: [detect-code-changes, check]
     runs-on: ubuntu-latest
+    if: needs-detect-code-changes.outputs.needs-build == 'true' || github.event_name == 'schedule'
     
     strategy:
       matrix:
@@ -133,8 +164,9 @@ jobs:
         path: target/release/ssgg
     
   build-release:
-    needs: [check]
+    needs: [detect-code-changes, check]
     runs-on: ubuntu-latest
+    if: needs-detect-code-changes.outputs.needs-build == 'true' || github.event_name == 'schedule'
     
     outputs:
       version: ${{ steps.get_version.outputs.version }}

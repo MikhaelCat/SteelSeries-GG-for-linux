@@ -1,0 +1,56 @@
+name: File Change Detection
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    
+    outputs:
+      needs-build: ${{ steps.changes.outputs.build }}
+      needs-security: ${{ steps.changes.outputs.security }}
+      build-changed: ${{ steps.changes.outputs.build-changed }}
+      
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Detect file changes
+      id: changes
+      run: |
+        # Get all changed files from the commit
+        if [ "${{ github.event_name }}" == "push" ]; then
+          # For push events, compare with previous commit
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }})
+        else
+          # For PR events, compare base branch with head
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }})
+        fi
+        
+        echo "Changed files: $CHANGED_FILES"
+        
+        # Define patterns to trigger builds
+        BUILD_PATTERNS="src/** Cargo.toml Cargo.lock features/** assets/**"
+        
+        # Check if any build-related files changed
+        NEEDS_BUILD="false"
+        BUILD_CHANGED="false"
+        
+        for pattern in $BUILD_PATTERNS; do
+          if echo "$CHANGED_FILES" | grep -qE "^($pattern)$"; then
+            NEEDS_BUILD="true"
+            BUILD_CHANGED="true"
+            break
+          fi
+        done
+        
+        echo "Build needed: $NEEDS_BUILD"
+        echo "build=$NEEDS_BUILD" >> $GITHUB_OUTPUT
+        echo "build-changed=$BUILD_CHANGED" >> $GITHUB_OUTPUT
+        
+        # Security scan always runs for safety
+        echo "Security scan: true"
+        echo "security=true" >> $GITHUB_OUTPUT
