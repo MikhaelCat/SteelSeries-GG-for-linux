@@ -47,16 +47,22 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Install dependencies
+    - name: Install dependencies (full list from build.yml)
       run: |
         sudo apt-get update
         sudo apt-get install -y \
           libhidapi-dev \
           pkg-config \
           build-essential \
-          libglib2.0-dev \
-          gir1.2-glib-2.0 \
-          libudev-dev
+          libssl-dev \
+          libpulse-dev \
+          libgdk-pixbuf2.0-dev \
+          gir1.2-gdkpixbuf-2.0 \
+          libgtk-4-dev \
+          gir1.2-gtk-4.0 \
+          libudev-dev \
+          libusb-1.0-0-dev \
+          libpango1.0-dev
     
     - name: Setup Rust
       uses: dtolnay/rust-toolchain@nightly
@@ -83,17 +89,22 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Install dependencies
+    - name: Install dependencies (full list from build.yml)
       run: |
         sudo apt-get update
         sudo apt-get install -y \
           libhidapi-dev \
           pkg-config \
           build-essential \
-          libglib2.0-dev \
-          gir1.2-glib-2.0 \
+          libssl-dev \
+          libpulse-dev \
+          libgdk-pixbuf2.0-dev \
+          gir1.2-gdkpixbuf-2.0 \
+          libgtk-4-dev \
+          gir1.2-gtk-4.0 \
           libudev-dev \
-          libusb-1.0-dev
+          libusb-1.0-0-dev \
+          libpango1.0-dev
     
     - name: Install minimal Rust version
       uses: dtolnay/rust-toolchain@1.97.1
@@ -116,9 +127,15 @@ jobs:
           libhidapi-dev \
           pkg-config \
           build-essential \
-          libglib2.0-dev \
-          gir1.2-glib-2.0 \
-          libudev-dev
+          libssl-dev \
+          libpulse-dev \
+          libgdk-pixbuf2.0-dev \
+          gir1.2-gdkpixbuf-2.0 \
+          libgtk-4-dev \
+          gir1.2-gtk-4.0 \
+          libudev-dev \
+          libusb-1.0-0-dev \
+          libpango1.0-dev
     
     - name: Install cargo-fuzz
       run: |
