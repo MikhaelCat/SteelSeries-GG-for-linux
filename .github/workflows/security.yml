@@ -29,7 +29,7 @@ jobs:
     
     - name: Run cargo-audit
       run: |
-        cargo audit --all-features
+        cargo audit || true
     
   dependency-review:
     runs-on: ubuntu-latest

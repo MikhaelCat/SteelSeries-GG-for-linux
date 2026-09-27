@@ -226,10 +226,7 @@ impl ConfigManager {
     /// Load configuration from home directory
     pub fn load_from_home() -> ConfigResult<Config> {
         // Try loading from default home location
-        loop {
-            let config = ConfigManager::load_from_home()?;
-            return Ok(config);
-        }
+        ConfigManager::load_from_home()
     }
 
     /// List available profiles
