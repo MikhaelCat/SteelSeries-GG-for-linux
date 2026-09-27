@@ -29,13 +29,6 @@ jobs:
         command: audit
         args: --all-features
     
-    - name: Run cargo-deny
-      uses: EmbarkStudios/cargo-action@cargo-deny
-      if: false
-      with:
-        command: deny
-        args: check all --all-features
-    
   dependency-review:
     runs-on: ubuntu-latest
     
@@ -57,7 +50,9 @@ jobs:
         sudo apt-get install -y \
           libhidapi-dev \
           pkg-config \
-          build-essential
+          build-essential \
+          libglib-2.0-dev \
+          libudev-dev
     
     - name: Setup Rust
       uses: dtolnay/rust-toolchain@nightly
@@ -84,6 +79,15 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libhidapi-dev \
+          pkg-config \
+          build-essential \
+          libudev-dev
+    
     - name: Install minimal Rust version
       uses: dtolnay/rust-toolchain@1.97.1
     
@@ -100,7 +104,12 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y libhidapi-dev pkg-config build-essential
+        sudo apt-get install -y \
+          libhidapi-dev \
+          pkg-config \
+          build-essential \
+          libglib-2.0-dev \
+          libudev-dev
     
     - name: Install cargo-fuzz
       run: |
