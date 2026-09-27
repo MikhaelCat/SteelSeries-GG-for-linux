@@ -23,8 +23,13 @@ jobs:
       run: |
         # Get all changed files from the commit
         if [ "${{ github.event_name }}" == "push" ]; then
-          # For push events, compare with previous commit
-          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }})
+          # For push events, compare with previous commit (handle first commit case)
+          if [ "${{ github.event.before }}" != "null" ] && [ -n "${{ github.event.before }}" ]; then
+            CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }})
+          else
+            # First commit or force push - scan everything
+            CHANGED_FILES=$(git diff --name-only HEAD^ HEAD 2>/dev/null || echo "all")
+          fi
         else
           # For PR events, compare base branch with head
           CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }})
