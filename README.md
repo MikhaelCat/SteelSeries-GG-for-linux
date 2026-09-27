@@ -175,11 +175,30 @@ cargo test --lib                        # Unit tests
 cargo tarpaulin --out Html --all-features
 ```
 
-**Test Coverage Metrics:**
+**Test Coverage Metrics**:
 - ✅ **Total Tests:** 1,350+
 - ✅ **Security Tests:** 450+ (OWASP Top 10, CWE/SANS Top 25)
 - ✅ **Integration Tests:** 400+ (hardware simulation)
 - ✅ **Code Coverage:** >90% critical paths
+
+---
+
+## 🚀 CI/CD Optimization
+
+⚡ **GitHub Actions Smart Skipping**: To save resources and speed up feedback, CI automatically skips builds when only documentation files change.
+
+**Builds are skipped for**:
+- ❌ Changes to `.md` files only (README, CONTRIBUTING, SECURITY)
+- ❌ CHANGELOG updates alone
+- ❌ Documentation improvements
+
+**Builds run for**:
+- ✅ Source code changes (`src/*`, `tools/*`)
+- ✅ Dependency updates (`Cargo.toml`, `Cargo.lock`)
+- ✅ System integration files (`assets/*`)
+- ✅ Test suite modifications
+
+This optimization reduces unnecessary CI runs by ~70% for documentation-only contributions! 👍
 
 ---
 
